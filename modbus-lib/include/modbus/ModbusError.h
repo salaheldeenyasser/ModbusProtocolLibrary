@@ -2,9 +2,14 @@
 #define MODBUS_ERROR_H
 #include <cstdint>
 
-enum class TransportErrorCode : uint8_t{
-    
+enum class TransportErrorCode{
+    Timeout,
+    ConnectionFailed,
+    ReadError,
+    WriteError,
 };
+
+
 
 
 #endif // MODBUS_ERROR_H
