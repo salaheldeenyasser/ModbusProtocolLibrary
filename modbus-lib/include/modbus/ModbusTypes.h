@@ -4,6 +4,9 @@
 #include <cstdint>
 #include <vector>
 
+#define MAX_HOLDING_REGISTERS 125
+#define MAX_COILS 2000
+
 struct ModbusFrame {
   uint8_t slaveID;
   uint8_t functionCode;
