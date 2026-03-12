@@ -4,6 +4,7 @@
 class ModbusFrameCodec{
 public:
 
+
 };
 
 #endif // MODBUS_FRAME_H
