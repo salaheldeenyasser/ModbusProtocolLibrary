@@ -17,8 +17,8 @@ enum class ProtocolErrorCode{
 };
 
 struct ModbusException{
-    uint8_t functionCode;
-    uint8_t exceptionCode;
+    u8 functionCode;
+    u8 exceptionCode;
     std::string description() const;
 };
 

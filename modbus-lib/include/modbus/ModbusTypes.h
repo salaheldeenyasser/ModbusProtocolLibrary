@@ -6,8 +6,16 @@
 #include <variant>
 #include <vector>
 
-#define MAX_HOLDING_REGISTERS 125
-#define MAX_COILS 2000
+#define sz size_t
+#define u8 uint8_t
+#define u16 uint16_t
+#define u32 uint32_t
+#define u64 uint64_t
+
+const int MAX_HOLDING_REGISTERS = 125;
+const int MAX_COILS = 2000;
+
+
 
 enum class FunctionCode : uint8_t {
   ReadCoils = 0x01,
