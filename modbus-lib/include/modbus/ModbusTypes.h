@@ -1,10 +1,13 @@
 #ifndef MODBUS_TYPES_H
 #define MODBUS_TYPES_H
+#include <iostream>
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <variant>
 #include <vector>
+#include <expected>
+#include <span>
 #include <algorithm>
 
 #define sz size_t
