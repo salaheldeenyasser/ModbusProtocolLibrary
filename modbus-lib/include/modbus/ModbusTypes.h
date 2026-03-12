@@ -5,6 +5,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <algorithm>
 
 #define sz size_t
 #define u8 uint8_t
