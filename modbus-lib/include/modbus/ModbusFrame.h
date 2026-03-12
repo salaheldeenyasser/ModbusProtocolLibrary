@@ -7,8 +7,7 @@ struct ModbusFrame {
   u8 slaveID;
   u8 functionCode;
   std::vector<u8> data;
-  u8 crcLow;
-  u8 crcHigh;
+  u16 crc;
 
   bool isExceptionResponse() const { return (functionCode & 0x7f) != 0; };
 
@@ -21,6 +20,7 @@ struct ModbusFrame {
   u16 registerValue(sz i) const {
     return (data[0 + i * 2] << 8) | data[2 + i * 2];
   }
+  
 };
 
 #endif // MODBUS_FRAME_H
