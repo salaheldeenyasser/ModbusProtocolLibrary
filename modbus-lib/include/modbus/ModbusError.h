@@ -1,8 +1,6 @@
 #ifndef MODBUS_ERROR_H
 #define MODBUS_ERROR_H
-#include <cstdint>
-#include <string>
-#include <variant>
+#include "ModbusTypes.h"
 
 enum class TransportErrorCode{
     Timeout,
