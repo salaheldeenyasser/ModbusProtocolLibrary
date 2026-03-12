@@ -3,6 +3,10 @@
 #include "../include/modbus/ModbusFrame.h"
 #include "../include/modbus/ModbusTypes.h"
 #include "../include/modbus/ModbusError.h"
+#include <expected>
+#include <span>
+#include <vector>
+#include <cstdint>
 
 class ModbusFrameCodec {
 public:
