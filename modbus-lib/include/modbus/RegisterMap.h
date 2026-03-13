@@ -30,7 +30,25 @@ public:
     void writeDiscreteInput(u16 addr, bool value);
     bool isValidDiscreteInputAddress(u16 addr) const;
 
+    using HoldingRegWriteCallback =
+        std::function<void(uint16_t address, uint16_t value)>;
+    void onHoldingRegisterWrite(uint16_t address,
+                                HoldingRegWriteCallback callback);
 
+    using CoilWriteCallback =
+        std::function<void(uint16_t address, bool value)>;
+    void onCoilWrite(uint16_t address, CoilWriteCallback callback);
+
+private:
+    std::vector<uint16_t> holdingRegisters_;
+    std::vector<uint16_t> inputRegisters_;
+    std::vector<bool>     coils_;
+    std::vector<bool>     discreteInputs_;
+
+    mutable std::mutex mutex_;
+
+    std::unordered_map<uint16_t, HoldingRegWriteCallback> holdingWriteCBs_;
+    std::unordered_map<uint16_t, CoilWriteCallback>       coilWriteCBs_;
 };
 
 #endif // REGISTER_MAP_H

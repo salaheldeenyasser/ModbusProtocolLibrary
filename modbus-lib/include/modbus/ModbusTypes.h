@@ -10,6 +10,9 @@
 #include <span>
 #include <algorithm>
 #include <chrono>
+#include <mutex>
+#include <unordered_map>
+#include <functional>
 
 #define sz size_t
 #define u8 uint8_t
