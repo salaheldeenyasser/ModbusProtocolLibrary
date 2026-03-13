@@ -14,28 +14,36 @@ public:
     void setDefaultTimeout(std::chrono::milliseconds timeout);
     void setRetryCount(u8 count);
 
+    // FC 0x01 - Read Coils
     std::expected<std::vector<bool>, ModbusError>
     readCoils(u8 slaveId, u16 startAddr, u16 count);
 
+    // FC 0x02 - Read Discrete Inputs
     std::expected<std::vector<bool>, ModbusError>
     readDiscreteInputs(u8 slaveId, u16 startAddr, u16 count);
 
+    // FC 0x03 - Read Holding Registers
     std::expected<std::vector<u16>, ModbusError>
     readHoldingRegisters(u8 slaveId, u16 startAddr, u16 count);
 
+    // FC 0x04 - Read Input Registers
     std::expected<std::vector<u16>, ModbusError>
     readInputRegisters(u8 slaveId, u16 startAddr, u16 count);
 
+    // FC 0x05 - Write Single Coil
     std::expected<void, ModbusError>
     writeSingleCoil(u8 slaveId, u16 addr, bool value);
 
+    // FC 0x06 - Write Single Register
     std::expected<void, ModbusError>
     writeSingleRegister(u8 slaveId, u16 addr, u16 value);
 
+    // FC 0x0F - Write Multiple Coils
     std::expected<void, ModbusError>
     writeMultipleCoils(u8 slaveId, u16 startAddr,
                        std::span<const bool> values);
 
+    // FC 0x10 - Write Multiple Registers
     std::expected<void, ModbusError>
     writeMultipleRegisters(u8 slaveId, u16 startAddr,
                            std::span<const u16> values);
