@@ -236,7 +236,7 @@ ModbusClient::writeSingleCoil(u8 slaveId, u16 addr, bool value)
     // 1. Build request frame: data = [addr_hi, addr_lo, value_hi, value_lo] & frame = {slaveId, FC=0x05, data} (value_hi/value_lo = 0xFF00 for ON, 0x0000 for OFF)
     ModbusFrame request = ModbusFrameCodec::makeWriteSingleCoilRequest(slaveId, addr, value);
     request.data = {static_cast<u8>((addr >> 8) & 0xFF), static_cast<u8>(addr & 0xFF),
-                    value ? 0xFF : 0x00, 0x00};
+                    static_cast<u8>((value >> 8) & 0xFF), static_cast<u8>(value & 0xFF)};
     // 2. Call sendAndReceive(frame) → error? propagate error upward
     auto responseResult = sendAndReceive(request);
     if (!responseResult)    {
