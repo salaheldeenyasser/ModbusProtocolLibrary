@@ -20,10 +20,10 @@ public:
     std::expected<std::vector<bool>, ModbusError>
     readDiscreteInputs(u8 slaveId, u16 startAddr, u16 count);
 
-    std::expected<std::vector<uint16_t>, ModbusError>
+    std::expected<std::vector<u16>, ModbusError>
     readHoldingRegisters(u8 slaveId, u16 startAddr, u16 count);
 
-    std::expected<std::vector<uint16_t>, ModbusError>
+    std::expected<std::vector<u16>, ModbusError>
     readInputRegisters(u8 slaveId, u16 startAddr, u16 count);
 
     std::expected<void, ModbusError>
