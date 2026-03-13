@@ -3,6 +3,7 @@
 #include "../include/modbus/ModbusError.h"
 #include "../include/modbus/ModbusFrame.h"
 #include "../include/modbus/ModbusTypes.h"
+#include "CrcEngine.h"
 
 class ModbusFrameCodec
 {
@@ -10,7 +11,14 @@ public:
   static std::vector<u8> encodeRtuRequest(const ModbusFrame &frame);
   static std::expected<ModbusFrame, ModbusError>
   decodeRtuResponse(std::span<const u8> buffer);
+
+  static ModbusFrame makeReadCoilsRequest(
+      u8 slaveId, u16 startAddr, u16 count);
+  static ModbusFrame makeReadDiscreteInputsRequest(
+      u8 slaveId, u16 startAddr, u16 count);
   static ModbusFrame makeReadHoldingRegistersRequest(
+      u8 slaveId, u16 startAddr, u16 count);
+  static ModbusFrame makeReadInputRegistersRequest(
       u8 slaveId, u16 startAddr, u16 count);
   static ModbusFrame makeWriteSingleRegisterRequest(
       u8 slaveId, u16 registerAddr, u16 value);
@@ -21,8 +29,6 @@ public:
       const std::vector<u16> &writeValues);
   static ModbusFrame makeDiagnosticRequest(
       u8 slaveId, u16 subFunction, const std::vector<u16> &data);
-  static ModbusFrame makeReadCoilsRequest(
-      u8 slaveId, u16 startAddr, u16 count);
   static ModbusFrame makeWriteSingleCoilRequest(
       u8 slaveId, u16 coilAddr, bool value);
   static ModbusFrame makeWriteMultipleCoilsRequest(
