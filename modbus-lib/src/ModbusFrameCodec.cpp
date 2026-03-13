@@ -10,7 +10,7 @@ std::vector<u8> ModbusFrameCodec::encodeRtuRequest(const ModbusFrame &frame)
     buffer.insert(buffer.end(), frame.data.begin(), frame.data.end());
     // Calculate CRC
     u16 crc = CrcEngine::calculate(buffer.data(), buffer.size());
-    buffer.push_back(crc & 0xFF);       // CRC Low byte
+    buffer.push_back(crc & 0xFF);        // CRC Low byte
     buffer.push_back((crc >> 8) & 0xFF); // CRC High byte
     return buffer;
 }
@@ -61,28 +61,29 @@ std::expected<ModbusFrame, ModbusError> ModbusFrameCodec::decodeRtuResponse(std:
 
 // FC 0x01: Read Coils
 ModbusFrame ModbusFrameCodec::makeReadCoilsRequest(
-      u8 slaveId, u16 startAddr, u16 count)
+    u8 slaveId, u16 startAddr, u16 count)
 {
     ModbusFrame frame;
     frame.slaveID = slaveId;
     frame.functionCode = static_cast<u8>(FunctionCode::ReadCoils); // Read Coils
-    frame.data.push_back((startAddr >> 8) & 0xFF); // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);        // Start Address Low byte
-    frame.data.push_back((count >> 8) & 0xFF);     // Quantity High byte
-    frame.data.push_back(count & 0xFF);            // Quantity Low byte
+    frame.data.push_back((startAddr >> 8) & 0xFF);                 // Start Address High byte
+    frame.data.push_back(startAddr & 0xFF);                        // Start Address Low byte
+    frame.data.push_back((count >> 8) & 0xFF);                     // Quantity High byte
+    frame.data.push_back(count & 0xFF);                            // Quantity Low byte
     return frame;
 }
 
 // FC 0x02: Read Discrete Inputs
 ModbusFrame ModbusFrameCodec::makeReadDiscreteInputsRequest(
-      u8 slaveId, u16 startAddr, u16 count){
+    u8 slaveId, u16 startAddr, u16 count)
+{
     ModbusFrame frame;
     frame.slaveID = slaveId;
     frame.functionCode = static_cast<u8>(FunctionCode::ReadDiscreteInputs); // Read Discrete Inputs
-    frame.data.push_back((startAddr >> 8) & 0xFF); // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);        // Start Address Low byte
-    frame.data.push_back((count >> 8) & 0xFF);     // Quantity High byte
-    frame.data.push_back(count & 0xFF);            // Quantity Low byte
+    frame.data.push_back((startAddr >> 8) & 0xFF);                          // Start Address High byte
+    frame.data.push_back(startAddr & 0xFF);                                 // Start Address Low byte
+    frame.data.push_back((count >> 8) & 0xFF);                              // Quantity High byte
+    frame.data.push_back(count & 0xFF);                                     // Quantity Low byte
     return frame;
 }
 
@@ -93,10 +94,10 @@ ModbusFrame ModbusFrameCodec::makeReadHoldingRegistersRequest(
     ModbusFrame frame;
     frame.slaveID = slaveId;
     frame.functionCode = static_cast<u8>(FunctionCode::ReadHoldingRegisters); // Read Holding Registers
-    frame.data.push_back((startAddr >> 8) & 0xFF); // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);        // Start Address Low byte
-    frame.data.push_back((count >> 8) & 0xFF);     // Quantity High byte
-    frame.data.push_back(count & 0xFF);            // Quantity Low byte
+    frame.data.push_back((startAddr >> 8) & 0xFF);                            // Start Address High byte
+    frame.data.push_back(startAddr & 0xFF);                                   // Start Address Low byte
+    frame.data.push_back((count >> 8) & 0xFF);                                // Quantity High byte
+    frame.data.push_back(count & 0xFF);                                       // Quantity Low byte
     return frame;
 }
 
@@ -107,10 +108,10 @@ ModbusFrame ModbusFrameCodec::makeReadInputRegistersRequest(
     ModbusFrame frame;
     frame.slaveID = slaveId;
     frame.functionCode = static_cast<u8>(FunctionCode::ReadInputRegisters); // Read Input Registers
-    frame.data.push_back((startAddr >> 8) & 0xFF); // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);       // Start Address Low byte
-    frame.data.push_back((count >> 8) & 0xFF);    // Quantity High byte
-    frame.data.push_back(count & 0xFF);           // Quantity Low byte
+    frame.data.push_back((startAddr >> 8) & 0xFF);                          // Start Address High byte
+    frame.data.push_back(startAddr & 0xFF);                                 // Start Address Low byte
+    frame.data.push_back((count >> 8) & 0xFF);                              // Quantity High byte
+    frame.data.push_back(count & 0xFF);                                     // Quantity Low byte
     return frame;
 }
 
@@ -121,11 +122,11 @@ ModbusFrame ModbusFrameCodec::makeWriteSingleCoilRequest(
     ModbusFrame frame;
     frame.slaveID = slaveId;
     frame.functionCode = static_cast<u8>(FunctionCode::WriteSingleCoil); // Write Single Coil
-    frame.data.push_back((coilAddr >> 8) & 0xFF); // Coil Address High byte
-    frame.data.push_back(coilAddr & 0xFF);        // Coil Address Low byte
-    u16 coilValue = value ? 0xFF00 : 0x0000; // ON = 0xFF00, OFF = 0x0000
-    frame.data.push_back((coilValue >> 8) & 0xFF); // Coil Value High byte
-    frame.data.push_back(coilValue & 0xFF);        // Coil Value Low byte
+    frame.data.push_back((coilAddr >> 8) & 0xFF);                        // Coil Address High byte
+    frame.data.push_back(coilAddr & 0xFF);                               // Coil Address Low byte
+    u16 coilValue = value ? 0xFF00 : 0x0000;                             // ON = 0xFF00, OFF = 0x0000
+    frame.data.push_back((coilValue >> 8) & 0xFF);                       // Coil Value High byte
+    frame.data.push_back(coilValue & 0xFF);                              // Coil Value Low byte
     return frame;
 }
 
@@ -136,10 +137,10 @@ ModbusFrame ModbusFrameCodec::makeWriteSingleRegisterRequest(
     ModbusFrame frame;
     frame.slaveID = slaveId;
     frame.functionCode = static_cast<u8>(FunctionCode::WriteSingleRegister); // Write   Single Register
-    frame.data.push_back((registerAddr >> 8) & 0xFF); // Register Address High byte
-    frame.data.push_back(registerAddr & 0xFF);        // Register Address Low byte
-    frame.data.push_back((value >> 8) & 0xFF); // Register Value High byte
-    frame.data.push_back(value & 0xFF);           // Register Value Low byte
+    frame.data.push_back((registerAddr >> 8) & 0xFF);                        // Register Address High byte
+    frame.data.push_back(registerAddr & 0xFF);                               // Register Address Low byte
+    frame.data.push_back((value >> 8) & 0xFF);                               // Register Value High byte
+    frame.data.push_back(value & 0xFF);                                      // Register Value Low byte
     return frame;
 }
 
@@ -150,38 +151,40 @@ ModbusFrame ModbusFrameCodec::makeWriteMultipleCoilsRequest(
     ModbusFrame frame;
     frame.slaveID = slaveId;
     frame.functionCode = static_cast<u8>(FunctionCode::WriteMultipleCoils); // Write Multiple Coils
-    frame.data.push_back((startAddr >> 8) & 0xFF); // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);        // Start Address Low byte
+    frame.data.push_back((startAddr >> 8) & 0xFF);                          // Start Address High byte
+    frame.data.push_back(startAddr & 0xFF);                                 // Start Address Low byte
     u16 count = values.size();
-    frame.data.push_back((count >> 8) & 0xFF);     // Quantity High byte
-    frame.data.push_back(count & 0xFF);            // Quantity Low byte
+    frame.data.push_back((count >> 8) & 0xFF); // Quantity High byte
+    frame.data.push_back(count & 0xFF);        // Quantity Low byte
     return frame;
 }
 
 // FC 0x10: Write Multiple Registers
 ModbusFrame ModbusFrameCodec::makeWriteMultipleRegistersRequest(
-    u8 slaveId, u16 startAddr, const std::vector<u16> & values)
+    u8 slaveId, u16 startAddr, const std::vector<u16> &values)
 {
     ModbusFrame frame;
     frame.slaveID = slaveId;
     frame.functionCode = static_cast<u8>(FunctionCode::WriteMultipleRegisters); // Write Multiple Registers
-    frame.data.push_back((startAddr >> 8) & 0xFF); // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);        // Start Address Low byte
+    frame.data.push_back((startAddr >> 8) & 0xFF);                              // Start Address High byte
+    frame.data.push_back(startAddr & 0xFF);                                     // Start Address Low byte
     u16 count = values.size();
-    frame.data.push_back((count >> 8) & 0xFF);     // Quantity High byte
-    frame.data.push_back(count & 0xFF);            // Quantity Low byte
+    frame.data.push_back((count >> 8) & 0xFF); // Quantity High byte
+    frame.data.push_back(count & 0xFF);        // Quantity Low byte
     return frame;
 }
 
 // FC 0x08: Diagnostics
 ModbusFrame ModbusFrameCodec::makeDiagnosticRequest(
-    u8 slaveId, u16 subFunction, const std::vector<u16> & data)
-{    ModbusFrame frame;
+    u8 slaveId, u16 subFunction, const std::vector<u16> &data)
+{
+    ModbusFrame frame;
     frame.slaveID = slaveId;
     frame.functionCode = static_cast<u8>(FunctionCode::Diagnostic); // Diagnostics
-    frame.data.push_back((subFunction >> 8) & 0xFF); // Sub-function Code High byte
-    frame.data.push_back(subFunction & 0xFF);        // Sub-function Code Low byte
-    for (u16 value : data) {
+    frame.data.push_back((subFunction >> 8) & 0xFF);                // Sub-function Code High byte
+    frame.data.push_back(subFunction & 0xFF);                       // Sub-function Code Low byte
+    for (u16 value : data)
+    {
         frame.data.push_back((value >> 8) & 0xFF); // Data High byte
         frame.data.push_back(value & 0xFF);        // Data Low byte
     }
@@ -190,7 +193,7 @@ ModbusFrame ModbusFrameCodec::makeDiagnosticRequest(
 
 // FC 0x17: Read/Write Multiple Registers
 ModbusFrame ModbusFrameCodec::makeReadWriteMultipleRegistersRequest(
-    u8 slaveId, u16 readStartAddr, u16 readCount, u16 writeStartAddr, const std::vector<u16> & writeValues)
+    u8 slaveId, u16 readStartAddr, u16 readCount, u16 writeStartAddr, const std::vector<u16> &writeValues)
 {
     ModbusFrame frame;
     frame.slaveID = slaveId;
@@ -204,9 +207,10 @@ ModbusFrame ModbusFrameCodec::makeReadWriteMultipleRegistersRequest(
     frame.data.push_back((writeStartAddr >> 8) & 0xFF); // Write Start Address High byte
     frame.data.push_back(writeStartAddr & 0xFF);        // Write Start Address Low byte
     u16 writeCount = writeValues.size();
-    frame.data.push_back((writeCount >> 8) & 0xFF);     // Write Quantity High byte
-    frame.data.push_back(writeCount & 0xFF);            // Write Quantity Low byte
-    for (u16 value : writeValues) {
+    frame.data.push_back((writeCount >> 8) & 0xFF); // Write Quantity High byte
+    frame.data.push_back(writeCount & 0xFF);        // Write Quantity Low byte
+    for (u16 value : writeValues)
+    {
         frame.data.push_back((value >> 8) & 0xFF); // Write Value High byte
         frame.data.push_back(value & 0xFF);        // Write Value Low byte
     }
