@@ -59,6 +59,34 @@ std::expected<ModbusFrame, ModbusError> ModbusFrameCodec::decodeRtuResponse(std:
     }
 }
 
+// FC 0x01: Read Coils
+ModbusFrame ModbusFrameCodec::makeReadCoilsRequest(
+      u8 slaveId, u16 startAddr, u16 count)
+{
+    ModbusFrame frame;
+    frame.slaveID = slaveId;
+    frame.functionCode = static_cast<u8>(FunctionCode::ReadCoils); // Read Coils
+    frame.data.push_back((startAddr >> 8) & 0xFF); // Start Address High byte
+    frame.data.push_back(startAddr & 0xFF);        // Start Address Low byte
+    frame.data.push_back((count >> 8) & 0xFF);     // Quantity High byte
+    frame.data.push_back(count & 0xFF);            // Quantity Low byte
+    return frame;
+}
+
+// FC 0x02: Read Discrete Inputs
+ModbusFrame ModbusFrameCodec::makeReadDiscreteInputsRequest(
+      u8 slaveId, u16 startAddr, u16 count){
+    ModbusFrame frame;
+    frame.slaveID = slaveId;
+    frame.functionCode = static_cast<u8>(FunctionCode::ReadDiscreteInputs); // Read Discrete Inputs
+    frame.data.push_back((startAddr >> 8) & 0xFF); // Start Address High byte
+    frame.data.push_back(startAddr & 0xFF);        // Start Address Low byte
+    frame.data.push_back((count >> 8) & 0xFF);     // Quantity High byte
+    frame.data.push_back(count & 0xFF);            // Quantity Low byte
+    return frame;
+}
+
+// FC 0x03: Read Holding Registers
 ModbusFrame ModbusFrameCodec::makeReadHoldingRegistersRequest(
     u8 slaveId, u16 startAddr, u16 count)
 {
