@@ -9,6 +9,7 @@
 #include <expected>
 #include <span>
 #include <algorithm>
+#include <chrono>
 
 #define sz size_t
 #define u8 uint8_t
