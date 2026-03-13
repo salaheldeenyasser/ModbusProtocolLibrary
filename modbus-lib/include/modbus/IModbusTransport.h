@@ -16,5 +16,9 @@ public:
     virtual void flush() = 0;
     virtual bool isOpen() const = 0;
     virtual void close() = 0;
+protected:
+    IModbusTransport() = default;
+    IModbusTransport(const IModbusTransport &) = delete;
+    IModbusTransport &operator=(const IModbusTransport &) = delete;
 };
 #endif // MODBUS_ITRANSPORT_H
