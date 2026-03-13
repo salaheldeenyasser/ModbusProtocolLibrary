@@ -1,6 +1,5 @@
 #include "../include/modbus/ModbusClient.h"
 
-
 std::expected<std::vector<u16>, ModbusError>
 ModbusClient::readHoldingRegisters(u8 slaveId, u16 startAddr, u16 count)
 {
@@ -17,7 +16,8 @@ ModbusClient::readHoldingRegisters(u8 slaveId, u16 startAddr, u16 count)
     ModbusFrame request = ModbusFrameCodec::makeReadHoldingRegistersRequest(slaveId, startAddr, count);
     // 3. Call sendAndReceive(frame) → error? propagate error upward
     auto responseResult = sendAndReceive(request);
-    if (!responseResult)    {
+    if (!responseResult)
+    {
         return std::unexpected(responseResult.error());
     }
     // 4. Validate response:
@@ -61,44 +61,44 @@ ModbusClient::writeSingleRegister(u8 slaveId, u16 addr, u16 value)
 {
     // 1. Build request frame: data = [addr_hi, addr_lo, val_hi, val_lo] & frame = {slaveId, FC=0x06, data}
     ModbusFrame request = ModbusFrameCodec::makeWriteSingleRegisterRequest(slaveId, addr, value);
-    request.data = { static_cast<u8>((addr >> 8) & 0xFF), static_cast<u8>(addr & 0xFF),
-                     static_cast<u8>((value >> 8) & 0xFF), static_cast<u8>(value & 0xFF) };
+    request.data = {static_cast<u8>((addr >> 8) & 0xFF), static_cast<u8>(addr & 0xFF),
+                    static_cast<u8>((value >> 8) & 0xFF), static_cast<u8>(value & 0xFF)};
     // 2. Call sendAndReceive(frame) → error? propagate error upward
     auto responseResult = sendAndReceive(request);
-    if (!responseResult)    {
+    if (!responseResult)
+    {
         return std::unexpected(responseResult.error());
     }
     auto response = responseResult.value();
     // 3. Validate echo response: - response.data == request.data (echo check) → mismatch? return UnexpectedResponse
-
 
     if (response.functionCode == request.functionCode)
     {
         if (response.data == request.data)
         {
             if (response.data.size() == 4 &&
-            response.data[0] == ((addr >> 8) & 0xFF) &&
-            response.data[1] == (addr & 0xFF) &&
-            response.data[2] == ((value >> 8) & 0xFF)   &&
-            response.data[3] == (value & 0xFF))
+                response.data[0] == ((addr >> 8) & 0xFF) &&
+                response.data[1] == (addr & 0xFF) &&
+                response.data[2] == ((value >> 8) & 0xFF) &&
+                response.data[3] == (value & 0xFF))
+            {
+                return {};
+            }
+            else
+            {
+                return std::unexpected(ModbusError(ProtocolErrorCode::UnexpectedResponse));
+            }
+        }
+        else if (response.isExceptionResponse())
         {
-            return {};
+            // 4. If exception response: return ModbusException (NO retry)
+            ModbusException ex;
+            ex.functionCode = response.functionCode & 0x7F; // Original FC
+            ex.exceptionCode = response.exceptionCode();
+            return std::unexpected(ModbusError(ex));
         }
         else
         {
             return std::unexpected(ModbusError(ProtocolErrorCode::UnexpectedResponse));
         }
     }
-    else if (response.isExceptionResponse())
-    {
-        // 4. If exception response: return ModbusException (NO retry)
-        ModbusException ex;
-        ex.functionCode = response.functionCode & 0x7F; // Original FC
-        ex.exceptionCode = response.exceptionCode();
-        return std::unexpected(ModbusError(ex));
-    }
-    else
-    {
-        return std::unexpected(ModbusError(ProtocolErrorCode::UnexpectedResponse));
-    }
-}
