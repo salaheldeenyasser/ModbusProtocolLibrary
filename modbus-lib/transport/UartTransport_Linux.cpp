@@ -1,92 +1,138 @@
 #include "UartTransport.h"
 
-UartTransport::UartTransport(const Config &config) : config_(config)
-{
-    // Open the serial port
-    fd_ = open(config_.devicePath.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
-    if (fd_ < 0)
-    {
-        throw std::runtime_error("Failed to open serial port: " + config_.devicePath);
-    }
+// UartTransport::UartTransport(const Config &config) : config_(config)
+// {
+//     // Open the serial port
+//     fd_ = open(config_.devicePath.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
+//     if (fd_ < 0)
+//     {
+//         throw std::runtime_error("Failed to open serial port: " + config_.devicePath);
+//     }
 
-    // Configure the serial port settings
+//     // Configure the serial port settings
+//     struct termios tty;
+//     if (tcgetattr(fd_, &tty) != 0)
+//     {
+//         close();
+//         throw std::runtime_error("Failed to get terminal attributes");
+//     }
+
+//     // Set baud rate
+//     speed_t baud;
+//     switch (config_.baudRate)
+//     {
+//     case 9600:
+//         baud = B9600;
+//         break;
+//     case 19200:
+//         baud = B19200;
+//         break;
+//     case 38400:
+//         baud = B38400;
+//         break;
+//     case 115200:
+//         baud = B115200;
+//         break;
+//     default:
+//         close();
+//         throw std::invalid_argument("Unsupported baud rate");
+//     }
+//     cfsetospeed(&tty, baud);
+//     cfsetispeed(&tty, baud);
+
+//     // Set data bits
+//     tty.c_cflag &= ~CSIZE;
+//     switch (config_.dataBits)
+//     {
+//     case 7:
+//         tty.c_cflag |= CS7;
+//         break;
+//     case 8:
+//         tty.c_cflag |= CS8;
+//         break;
+//     default:
+//         close();
+//         throw std::invalid_argument("Unsupported data bits");
+//     }
+
+//     // Set parity
+//     switch (config_.parity)
+//     {
+//     case Parity::None:
+//         tty.c_cflag &= ~PARENB;
+//         break;
+//     case Parity::Even:
+//         tty.c_cflag |= PARENB;
+//         tty.c_cflag &= ~PARODD;
+//         break;
+//     case Parity::Odd:
+//         tty.c_cflag |= PARENB | PARODD;
+//         break;
+//     default:
+//         close();
+//         throw std::invalid_argument("Unsupported parity");
+//     }
+
+//     // Set stop bits
+//     switch (config_.stopBits)
+//     {
+//     case StopBits::One:
+//         tty.c_cflag &= ~CSTOPB;
+//         break;
+//     case StopBits::Two:
+//         tty.c_cflag |= CSTOPB;
+//         break;
+//     default:
+//         close();
+//         throw std::invalid_argument("Unsupported stop bits");
+//     }
+// };
+
+UartTransport::UartTransport(const Config &config) : config_(config) {
+    fd_ = open(config.devicePath.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);
+    if (fd_ < 0) return;
+
     struct termios tty;
-    if (tcgetattr(fd_, &tty) != 0)
-    {
-        close();
-        throw std::runtime_error("Failed to get terminal attributes");
-    }
+    if (tcgetattr(fd_, &tty) != 0) return;
 
-    // Set baud rate
-    speed_t baud;
-    switch (config_.baudRate)
-    {
-    case 9600:
-        baud = B9600;
-        break;
-    case 19200:
-        baud = B19200;
-        break;
-    case 38400:
-        baud = B38400;
-        break;
-    case 115200:
-        baud = B115200;
-        break;
-    default:
-        close();
-        throw std::invalid_argument("Unsupported baud rate");
+    // --- Baud Rate ---
+    speed_t speed;
+    switch (config.baudRate) {
+        case 115200: speed = B115200; break;
+        case 38400:  speed = B38400;  break;
+        case 19200:  speed = B19200;  break;
+        default:     speed = B9600;   break;
     }
-    cfsetospeed(&tty, baud);
-    cfsetispeed(&tty, baud);
+    cfsetospeed(&tty, speed);
+    cfsetispeed(&tty, speed);
 
-    // Set data bits
+    // --- Framing and Parity ---
     tty.c_cflag &= ~CSIZE;
-    switch (config_.dataBits)
-    {
-    case 7:
-        tty.c_cflag |= CS7;
-        break;
-    case 8:
-        tty.c_cflag |= CS8;
-        break;
-    default:
-        close();
-        throw std::invalid_argument("Unsupported data bits");
-    }
+    tty.c_cflag |= (config.dataBits == 7) ? CS7 : CS8;
 
-    // Set parity
-    switch (config_.parity)
-    {
-    case Parity::None:
+    if (config.parity == Parity::None) {
         tty.c_cflag &= ~PARENB;
-        break;
-    case Parity::Even:
+    } else {
         tty.c_cflag |= PARENB;
-        tty.c_cflag &= ~PARODD;
-        break;
-    case Parity::Odd:
-        tty.c_cflag |= PARENB | PARODD;
-        break;
-    default:
-        close();
-        throw std::invalid_argument("Unsupported parity");
+        if (config.parity == Parity::Odd) tty.c_cflag |= PARODD;
+        else tty.c_cflag &= ~PARODD;
     }
 
-    // Set stop bits
-    switch (config_.stopBits)
-    {
-    case StopBits::One:
-        tty.c_cflag &= ~CSTOPB;
-        break;
-    case StopBits::Two:
-        tty.c_cflag |= CSTOPB;
-        break;
-    default:
-        close();
-        throw std::invalid_argument("Unsupported stop bits");
-    }
-};
+    if (config.stopBits == StopBits::Two) tty.c_cflag |= CSTOPB;
+    else tty.c_cflag &= ~CSTOPB;
+
+    // --- Raw Mode (Essential for Modbus) ---
+    tty.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY | IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
+    tty.c_oflag &= ~OPOST;
+
+    // Blocking behavior: return immediately if no data
+    tty.c_cc[VMIN] = 0;
+    tty.c_cc[VTIME] = 0;
+
+    tcsetattr(fd_, TCSANOW, &tty);
+    fcntl(fd_, F_SETFL, 0); // Set to blocking mode for read/write
+}
 
 // std::expected<size_t, ModbusError> UartTransport::send(std::span<const u8> data)
 // {
