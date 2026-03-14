@@ -120,7 +120,7 @@ bool RegisterMap::isValidDiscreteInputAddress(u16 addr) const
 }
 
 void RegisterMap::onHoldingRegisterWrite(u16 address,
-                                        HoldingRegWriteCallback callback)
+                                         HoldingRegWriteCallback callback)
 {
     std::lock_guard lock(mutex_);
     holdingWriteCBs_[address] = std::move(callback);
