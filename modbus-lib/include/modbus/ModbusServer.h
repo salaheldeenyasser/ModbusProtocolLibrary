@@ -1,6 +1,6 @@
 #ifndef MODBUS_SERVER_H
 #define MODBUS_SERVER_H
-#include "../../src/ModbusFrameCodec.cpp"
+#include "../../src/ModbusFrameCodec.h"
 #include "IModbusTransport.h"
 #include "ModbusError.h"
 #include "ModbusFrame.h"
@@ -38,8 +38,7 @@ private:
     ModbusFrame handleWriteMultipleCoils(const ModbusFrame &request);
     ModbusFrame handleWriteMultipleRegisters(const ModbusFrame &request);
 
-    ModbusFrame buildExceptionResponse(const ModbusFrame &request,
-                                     uint8_t exceptionCode);
+    ModbusFrame buildExceptionResponse(uint8_t fc, ExceptionCode code);
 };
 
 #endif // MODBUS_SERVER_H
