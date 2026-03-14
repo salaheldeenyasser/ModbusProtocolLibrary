@@ -2,6 +2,9 @@
 #define UART_TRANSPORT_H
 
 #include "../../include/modbus/IModbusTransport.h"
+#include <termios.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 class UartTransport : public IModbusTransport
 {
