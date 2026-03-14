@@ -71,8 +71,8 @@ void run_crc_tests() {
     {
         std::vector<u8> input = {0x01, 0x03, 0x04, 0x00, 0x17, 0x00, 0x2B};
         u16 result = CrcEngine::calculate(input.data(), input.size());
-        assert(result == 0xCAA9);
-        std::cout << "[PASS] Vector 2 (0xCAA9)" << std::endl;
+        assert(result == 0x280A); // Changed from 0xCAA9 to the correct Modbus CRC
+        std::cout << "[PASS] Vector 2 (0x280A)" << std::endl;
     }
 
     // --- TEST: crc_known_vector_3 ---

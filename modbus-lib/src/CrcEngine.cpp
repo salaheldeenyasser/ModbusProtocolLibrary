@@ -1,31 +1,22 @@
 #include "CrcEngine.h"
 
-u16 CrcEngine::calculate(const u8* data, sz length) {
-    u16 crc = 0xFFFF; // Initial value
+u16 CrcEngine::calculate(const u8* data, size_t length) {
+    u16 crc = 0xFFFF;
 
-    for (sz i = 0; i < length; ++i) {
-        crc ^= static_cast<u16>(data[i]); // XOR byte into LSB of CRC
+    for (size_t i = 0; i < length; ++i) {
+        crc ^= static_cast<u16>(data[i] & 0xFF);
 
         for (int j = 0; j < 8; ++j) {
-            if (crc & 0x0001) {      // If LSB is set
-                crc >>= 1;           // Shift right
-                crc ^= 0xA001;       // XOR with Modbus polynomial
+            if (crc & 0x0001) {
+                crc >>= 1;
+                crc ^= 0xA001;
             } else {
-                crc >>= 1;           // Just shift right
+                crc >>= 1;
             }
         }
     }
-//   for (sz i = 0; i < length; i++) {
-//     crc ^= data[i];
-//     for (int j = 0; j < 8; j++) {
-//       if (crc & 1) {
-//         crc = (crc >> 1) ^ 0xA001;
-//       } else {
-//         crc = crc >> 1;
-//       }
-//     }
-//   }
-  return crc;
+
+    return crc;
 }
 
 bool CrcEngine::verify(const u8 *data, sz length, u16 crc) {
