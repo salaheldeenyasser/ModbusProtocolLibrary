@@ -20,15 +20,15 @@ void ModbusServer::start()
     if (running_)
         return;
     running_ = true;
-    workerThread_ = std::thread([this]() {
+    workerThread_ = std::thread([this]()
+                                {
         while (running_)
         {
             if (!processOneRequest())
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
-        }
-    });
+        } });
 }
 
 void ModbusServer::stop()
@@ -78,26 +78,36 @@ bool ModbusServer::processOneRequest()
     return true;
 }
 
-ModbusFrame ModbusServer::handleRequest(const ModbusFrame& req) {
-    switch (req.functionCode) {
-        case 0x01: return handleReadCoils(req);
-        case 0x02: return handleReadDiscreteInputs(req);
-        case 0x03: return handleReadHoldingRegisters(req);
-        case 0x04: return handleReadInputRegisters(req);
-        case 0x05: return handleWriteSingleCoil(req);
-        case 0x06: return handleWriteSingleRegister(req);
-        case 0x0F: return handleWriteMultipleCoils(req);
-        case 0x10: return handleWriteMultipleRegisters(req);
-        default:
-            return buildExceptionResponse(
-                req.functionCode, ExceptionCode::IllegalFunction);
+ModbusFrame ModbusServer::handleRequest(const ModbusFrame &req)
+{
+    switch (req.functionCode)
+    {
+    case 0x01:
+        return handleReadCoils(req);
+    case 0x02:
+        return handleReadDiscreteInputs(req);
+    case 0x03:
+        return handleReadHoldingRegisters(req);
+    case 0x04:
+        return handleReadInputRegisters(req);
+    case 0x05:
+        return handleWriteSingleCoil(req);
+    case 0x06:
+        return handleWriteSingleRegister(req);
+    case 0x0F:
+        return handleWriteMultipleCoils(req);
+    case 0x10:
+        return handleWriteMultipleRegisters(req);
+    default:
+        return buildExceptionResponse(
+            req.functionCode, ExceptionCode::IllegalFunction);
     }
 }
 
-ModbusFrame ModbusServer::buildExceptionResponse(u8 fc, ExceptionCode code) {
-    return ModbusFrame {
-        .slaveID      = slaveId_,
+ModbusFrame ModbusServer::buildExceptionResponse(u8 fc, ExceptionCode code)
+{
+    return ModbusFrame{
+        .slaveID = slaveId_,
         .functionCode = static_cast<u8>(fc | 0x80),
-        .data         = { static_cast<u8>(code) }
-    };
+        .data = {static_cast<u8>(code)}};
 }
