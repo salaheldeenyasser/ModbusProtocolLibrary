@@ -43,13 +43,13 @@ public:
 private:
     std::vector<u16> holdingRegisters_;
     std::vector<u16> inputRegisters_;
-    std::vector<bool>     coils_;
-    std::vector<bool>     discreteInputs_;
+    std::vector<bool> coils_;
+    std::vector<bool> discreteInputs_;
 
     mutable std::mutex mutex_;
 
     std::unordered_map<u16, HoldingRegWriteCallback> holdingWriteCBs_;
-    std::unordered_map<u16, CoilWriteCallback>       coilWriteCBs_;
+    std::unordered_map<u16, CoilWriteCallback> coilWriteCBs_;
 };
 
 #endif // REGISTER_MAP_H
