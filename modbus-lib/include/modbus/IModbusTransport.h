@@ -2,6 +2,7 @@
 #define MODBUS_ITRANSPORT_H
 #include "ModbusError.h"
 #include "ModbusTypes.h"
+#include "ModbusFrame.h"
 
 class IModbusTransport
 {
