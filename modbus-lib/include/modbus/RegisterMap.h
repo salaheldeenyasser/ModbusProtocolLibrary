@@ -1,6 +1,7 @@
 #ifndef REGISTER_MAP_H
 #define REGISTER_MAP_H
-#include "ModbusTypes.h"
+#include "ModbusError.h"
+#include "ModbusFrame.h"
 class RegisterMap
 {
 public:
