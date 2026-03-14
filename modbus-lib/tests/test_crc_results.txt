@@ -1,0 +1,9 @@
+** CRC Test Results **
+
+-------- time: 2026-03-15 01:30:45 --------
+Starting Modbus CRC-16 Test Suite...
+
+[PASS] Vector 1 (0x0BC4)
+test_crc: test_crc.cpp:74: void run_crc_tests(): Assertion `result == 0xCAA9' failed.
+Aborted (core dumped)
+-------------------------------------------
