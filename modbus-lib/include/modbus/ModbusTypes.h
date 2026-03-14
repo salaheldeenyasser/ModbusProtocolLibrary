@@ -13,6 +13,8 @@
 #include <mutex>
 #include <unordered_map>
 #include <functional>
+#include <atomic>
+#include <thread>
 
 #define sz size_t
 #define u8 uint8_t
