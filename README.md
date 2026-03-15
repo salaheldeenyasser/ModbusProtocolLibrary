@@ -1,180 +1,281 @@
-# Modbus Protocol Library (C++)
+# Modbus Protocol Library — C++23
 
-A lightweight Modbus RTU-oriented C++ library that provides reusable protocol building blocks:
+A clean, modular, portable C++ library implementing the Modbus RTU serial
+protocol with optional TCP support.  Designed for embedded systems, industrial
+automation, and teaching environments.
 
-- Frame construction and parsing
-- CRC16 (Modbus) calculation and verification
-- A transport abstraction for serial/UART and custom backends
-- A client API for common Modbus function codes
+---
 
-This repository currently contains a partially implemented library skeleton. Core codec and client pieces exist, while server, UART transport, examples, and tests are scaffolded but not yet implemented.
+## Features
 
-## Project Status
+| Feature | Status |
+|---------|--------|
+| Modbus RTU encoding / decoding | ✅ |
+| CRC-16/IBM generation and verification | ✅ |
+| Correct big-endian data / little-endian CRC byte order | ✅ |
+| Function codes 01, 02, 03, 04, 05, 06, 0F, 10 | ✅ |
+| Client API (read/write all data types) | ✅ |
+| Server engine with FC dispatch | ✅ |
+| Modbus exception responses (codes 01–04) | ✅ |
+| Thread-safe RegisterMap with write callbacks | ✅ |
+| UART transport (Linux) | ✅ |
+| Virtual UART testing via `socat` | ✅ |
+| Typed error handling via `std::expected` (no raw exceptions) | ✅ |
+| MockTransport for hardware-free unit testing | ✅ |
+| Demo server + client console programs | ✅ |
+| Modbus TCP (MBAP header, no CRC) |  |
 
-Implemented now:
+---
 
-- `modbus-lib/src/CrcEngine.cpp`: CRC16 (polynomial `0xA001`) logic
-- `modbus-lib/src/ModbusFrameCodec.cpp`: RTU encode/decode and request factory helpers
-- `modbus-lib/src/ModbusClient.cpp`: most client-side FC handlers (`0x01`, `0x02`, `0x03`, `0x04`, `0x05`, `0x06`, `0x0F`, `0x10`)
-- Public API headers under `modbus-lib/include/modbus/`
+## Project Structure
 
-Scaffolded / TODO:
-
-- `modbus-lib/src/ModbusServer.cpp` (empty)
-- `modbus-lib/include/modbus/ModbusServer.h` (empty)
-- `modbus-lib/src/RegisterMap.cpp` (empty)
-- `modbus-lib/transport/UartTransport.cpp` and `modbus-lib/transport/include/UartTransport.h` (empty)
-- `modbus-lib/examples/` (empty)
-- `modbus-lib/tests/mocks/` (empty)
-
-## Repository Layout
-
-```text
-ModbusProtocolLibrary/
-├── README.md
-└── modbus-lib/
-		├── include/modbus/
-		│   ├── IModbusTransport.h
-		│   ├── ModbusClient.h
-		│   ├── ModbusError.h
-		│   ├── ModbusFrame.h
-		│   ├── ModbusServer.h
-		│   ├── ModbusTypes.h
-		│   └── RegisterMap.h
-		├── src/
-		│   ├── CrcEngine.cpp
-		│   ├── CrcEngine.h
-		│   ├── ModbusClient.cpp
-		│   ├── ModbusFrameCodec.cpp
-		│   ├── ModbusFrameCodec.h
-		│   ├── ModbusServer.cpp
-		│   └── RegisterMap.cpp
-		├── transport/
-		│   ├── UartTransport.cpp
-		│   └── include/UartTransport.h
-		├── examples/
-		└── tests/
-				└── mocks/
+```
+modbus-lib/
+├── include/modbus/          Public API headers (what users #include)
+│   ├── ModbusClient.h
+│   ├── ModbusServer.h
+│   ├── RegisterMap.h
+│   ├── IModbusTransport.h
+│   ├── ModbusFrame.h
+│   ├── ModbusError.h
+│   └── ModbusTypes.h
+├── src/                     Private implementation
+│   ├── ModbusClient.cpp
+│   ├── ModbusServer.cpp
+│   ├── ModbusFrameCodec.h/cpp
+│   ├── CrcEngine.h/cpp
+│   └── RegisterMap.cpp
+├── transport/               Platform-specific transports
+│   ├── include/
+│   │   └── UartTransport.h  (no OS headers — portable)
+│   └── UartTransport_Linux.cpp
+├── tests/
+│   ├── MockTransport.h      In-memory transport for unit tests
+│   ├── test_crc.cpp         14 CRC tests
+│   ├── test_frame_codec.cpp 42 encoding/decoding tests
+│   ├── test_client.cpp      36 client unit tests
+│   ├── test_server.cpp      38 server unit tests
+│   └── test_integration.cpp 32 client↔server integration tests
+├── examples/
+│   ├── server/main.cpp      modbus_server demo
+│   └── client/main.cpp      modbus_client demo
+└── CMakeLists.txt
 ```
 
-## Requirements
+---
 
-### Language and toolchain
+## Building
 
-- C++23-capable compiler
-	- `std::expected` is used in public interfaces
-- A standard build toolchain (`g++`)
-- Git
+### Prerequisites
 
+- GCC ≥ 13 or Clang ≥ 17 (C++23 required for `std::expected`)
+- CMake ≥ 3.16
+- POSIX threads (`-lpthread`)
+- Linux for UART transport; architecture is ready for Windows port
 
-### Install dependencies
-
-
-## Getting the source
+### Configure and Build
 
 ```bash
-git clone <your-fork-or-repo-url> ModbusProtocolLibrary
-cd ModbusProtocolLibrary
+cmake -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
 ```
 
-## Build
+### Run all tests
 
+```bash
+cd build && ctest --output-on-failure
+```
 
-## API Overview
+Or run individual test binaries:
 
-### Core types
+```bash
+./build/test_crc
+./build/test_frame_codec
+./build/test_client
+./build/test_server
+./build/test_integration
+```
 
-- `ModbusFrame`: RTU frame representation (`slaveID`, `functionCode`, `data`, `crc`)
-- `ModbusError`: `std::variant` over:
-	- `TransportErrorCode`
-	- `ProtocolErrorCode`
-	- `ModbusException`
+### Without CMake (direct g++)
 
-### Transport abstraction
+```bash
+FLAGS="-std=c++23 -I include -I transport/include -I src"
 
-The `IModbusTransport` interface decouples protocol logic from physical transport:
+# Build library
+g++ $FLAGS -c src/CrcEngine.cpp          -o /tmp/CrcEngine.o
+g++ $FLAGS -c src/ModbusFrameCodec.cpp   -o /tmp/ModbusFrameCodec.o
+g++ $FLAGS -c src/RegisterMap.cpp        -o /tmp/RegisterMap.o
+g++ $FLAGS -c src/ModbusClient.cpp       -o /tmp/ModbusClient.o
+g++ $FLAGS -c src/ModbusServer.cpp       -o /tmp/ModbusServer.o
+g++ $FLAGS -c transport/UartTransport_Linux.cpp -o /tmp/UartTransport.o
+ar rcs /tmp/libmodbus.a /tmp/*.o
 
-- `send(std::span<const u8>) -> std::expected<size_t, ModbusError>`
-- `receive(size_t expectedLength, std::chrono::milliseconds timeout) -> std::expected<std::vector<u8>, ModbusError>`
-- `flush()`, `isOpen()`, `close()`
+# Run tests
+g++ $FLAGS -I tests tests/test_crc.cpp /tmp/libmodbus.a -lpthread -o /tmp/t && /tmp/t
+```
 
-### Client operations
+---
 
-`ModbusClient` currently exposes:
+## Running the Demo Applications
 
-- Read:
-	- `readCoils` (`0x01`)
-	- `readDiscreteInputs` (`0x02`)
-	- `readHoldingRegisters` (`0x03`)
-	- `readInputRegisters` (`0x04`)
-- Write:
-	- `writeSingleCoil` (`0x05`)
-	- `writeSingleRegister` (`0x06`)
-	- `writeMultipleCoils` (`0x0F`)
-	- `writeMultipleRegisters` (`0x10`)
+### Step 1 — Create a virtual serial port pair (Linux)
 
-`ModbusFrameCodec` also has request factories for diagnostics (`0x08`) and read/write multiple registers (`0x17`).
+```bash
+socat -d -d pty,raw,echo=0 pty,raw,echo=0
+# Output shows two device names, e.g. /dev/pts/5 and /dev/pts/6
+```
 
-## Minimal usage example
+### Step 2 — Start the server
+
+```bash
+./build/modbus_server --mode uart --port /dev/pts/5 --baud 9600 --id 1
+```
+
+The server console displays the live register map and reacts to client writes.
+
+### Step 3 — Run client commands
+
+```bash
+# Read 3 holding registers from slave 1 at address 0x0000
+./build/modbus_client --mode uart --port /dev/pts/6 --baud 9600 \
+    read-regs --slave 1 --addr 0x0000 --count 3
+
+# Write a new setpoint (35.0 °C * 10 = 350 raw)
+./build/modbus_client --mode uart --port /dev/pts/6 --baud 9600 \
+    write-reg --slave 1 --addr 0x0002 --value 350
+
+# Turn pump ON
+./build/modbus_client --mode uart --port /dev/pts/6 --baud 9600 \
+    write-coil --slave 1 --addr 0x0000 --value 1
+
+# Read coil status
+./build/modbus_client --mode uart --port /dev/pts/6 --baud 9600 \
+    read-coils --slave 1 --addr 0x0000 --count 2
+```
+
+---
+
+## API Reference
+
+### ModbusClient
 
 ```cpp
-#include "modbus/ModbusClient.h"
-#include "modbus/IModbusTransport.h"
-#include <memory>
+#include <modbus/ModbusClient.h>
+#include <UartTransport.h>
 
-class MyTransport final : public IModbusTransport {
-public:
-		std::expected<size_t, ModbusError> send(std::span<const u8> data) override;
-		std::expected<std::vector<u8>, ModbusError> receive(size_t expectedLength, std::chrono::milliseconds timeout) override;
-		void flush() override;
-		bool isOpen() const override;
-		void close() override;
-};
+UartTransport::Config cfg{ "/dev/ttyUSB0", 9600 };
+ModbusClient client(std::make_unique<UartTransport>(cfg));
+client.setDefaultTimeout(std::chrono::milliseconds(1000));
+client.setRetryCount(3);
 
-int main() {
-		auto transport = std::make_unique<MyTransport>();
-		ModbusClient client(std::move(transport));
+// Read 3 holding registers from slave 1 at address 0
+auto regs = client.readHoldingRegisters(1, 0x0000, 3);
+if (regs) {
+    for (auto v : *regs) std::cout << v << "\n";
+} else {
+    std::cerr << modbusErrorToString(regs.error()) << "\n";
+}
 
-		auto result = client.readHoldingRegisters(1, 0, 4);
-		if (!result) {
-				// Inspect result.error() (TransportErrorCode / ProtocolErrorCode / ModbusException)
-				return 1;
-		}
+// Write a value
+client.writeSingleRegister(1, 0x0002, 350);
 
-		const auto &registers = result.value();
-		(void)registers;
-		return 0;
+// Write a coil
+client.writeSingleCoil(1, 0x0000, true);
+```
+
+### ModbusServer
+
+```cpp
+#include <modbus/ModbusServer.h>
+#include <UartTransport.h>
+
+auto regMap = std::make_shared<RegisterMap>(2000, 10, 10, 2000);
+regMap->writeHoldingRegister(0, 1500);   // initial motor speed
+
+// React when client writes register 2 (setpoint)
+regMap->onHoldingRegisterWrite(2, [](u16 addr, u16 val) {
+    std::cout << "Setpoint changed to " << (val * 0.1f) << " C\n";
+});
+
+UartTransport::Config cfg{ "/dev/ttyUSB0", 9600 };
+ModbusServer server(std::make_unique<UartTransport>(cfg), regMap, /*slaveId=*/1);
+server.start();  // background thread
+
+// server.stop() called on shutdown / signal handler
+```
+
+### Error Handling
+
+All public API methods return `std::expected<T, ModbusError>`.
+
+```cpp
+auto result = client.readHoldingRegisters(1, 0x0064, 1);
+
+if (!result) {
+    std::visit([](auto&& e) {
+        using T = std::decay_t<decltype(e)>;
+        if constexpr (std::is_same_v<T, TransportErrorCode>) {
+            // Timeout, connection error, etc.
+        } else if constexpr (std::is_same_v<T, ProtocolErrorCode>) {
+            // CRC mismatch, unexpected response, etc.
+        } else {
+            // ModbusException: server reported an error
+            std::cerr << e.description() << "\n";
+        }
+    }, result.error());
 }
 ```
 
-## Protocol and architecture diagrams (PlantUML)
+---
 
+## Architecture
 
-## Error handling model
+```
+Application Code
+      │
+ModbusClient / ModbusServer   (public API)
+      │
+ModbusFrameCodec               (encode/decode PDUs — private)
+      │
+CrcEngine                      (CRC-16/IBM — private)
+      │
+IModbusTransport               (pure abstract interface)
+      │
+   ┌──┴──┐
+   │     │
+UartTransport   TcpTransport   MockTransport (tests)
+```
 
-The code uses `std::expected<T, ModbusError>` for error propagation.
+Key design decisions:
+- **Dependency Inversion**: Client and Server depend on `IModbusTransport` abstraction, never on concrete transport classes.
+- **Stateless Codec**: `ModbusFrameCodec` has no state — pure byte ↔ struct transformation, trivially testable.
+- **Callback-safe RegisterMap**: Callbacks are invoked **after** the mutex is released, eliminating deadlock risk.
+- **Typed errors**: `std::expected` + `std::variant` forces callers to handle errors; no hidden exceptions.
 
-- Transport-level failures:
-	- timeout / read / write / connection failures
-- Protocol-level failures:
-	- CRC mismatch
-	- invalid frame lengths
-	- unexpected response shape
-	- slave ID mismatch
-- Device exception responses:
-	- Modbus exception frame (`functionCode | 0x80`)
+---
 
-## Testing
+## Testing Summary
 
+| Suite | Tests | Result |
+|-------|-------|--------|
+| `test_crc` | 14 | ✅ 14/14 |
+| `test_frame_codec` | 42 | ✅ 42/42 |
+| `test_client` | 36 | ✅ 36/36 |
+| `test_server` | 38 | ✅ 38/38 |
+| `test_integration` | 32 | ✅ 32/32 |
+| **Total** | **162** | **✅ 162/162** |
 
-## Known limitations (current snapshot)
+All tests run without hardware using `MockTransport` (unit) and `LoopTransport` (integration).
 
+---
 
-## Contributing
+## Modbus Protocol Quick Reference
 
-1. Fork and create a feature branch.
-2. Keep protocol behavior covered by tests.
-3. Prefer small focused commits.
-4. Open a PR with protocol traces or test evidence.
+| Type | Bits | R/W | PDU Address | Example |
+|------|------|-----|-------------|---------|
+| Coils | 1 | R/W | 0x0000+ | Relay ON/OFF |
+| Discrete Inputs | 1 | R | 0x0000+ | Door sensor |
+| Input Registers | 16 | R | 0x0000+ | Sensor reading |
+| Holding Registers | 16 | R/W | 0x0000+ | Setpoints, config |
 
-## Suggested roadmap
+**Data fields** are big-endian.  **CRC bytes** are little-endian (low byte first). This asymmetry is in the Modbus specification and cannot be changed.
