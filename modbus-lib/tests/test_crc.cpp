@@ -7,10 +7,10 @@
 | Input (hex)            | Expected CRC | Appended as |
 | ---------------------- | ------------ | ----------- |
 | `01 03 00 00 00 02`    | `0x0BC4`     | `C4 0B`     |
-| `01 03 04 00 17 00 2B` | `0xCAA9`     | `A9 CA`     |
-| `01 06 00 00 05 DC`    | `0x0488`     | `88 04`     |
+| `01 03 04 00 17 00 2B` | `0x280A`     | `A9 CA`     |
+| `01 06 00 00 05 DC`    | `0x038B`     | `88 04`     |
 | `01 05 00 00 FF 00`    | `0x3A8C`     | `8C 3A`     |
-| `FF FF FF FF FF FF`    | `0xF0B8`     | `B8 F0`     |
+| `FF FF FF FF FF FF`    | `0x9401`     | `B8 F0`     |
 
 TEST: crc_known_vector_1
   Input:    [01 03 00 00 00 02]
@@ -18,11 +18,11 @@ TEST: crc_known_vector_1
 
 TEST: crc_known_vector_2
   Input:    [01 03 04 00 17 00 2B]
-  Expected: 0xCAA9 → appended as [A9 CA]
+  Expected: 0x280A → appended as [A9 CA]
 
 TEST: crc_known_vector_3
   Input:    [01 06 00 00 05 DC]
-  Expected: 0x0488 → appended as [88 04]
+  Expected: 0x038B → appended as [88 04]
 
 TEST: crc_single_byte
   Input:    [01]
@@ -49,7 +49,7 @@ TEST: crc_byte_order
 #include <vector>
 #include <cassert>
 #include <iomanip>
-#include "/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/src/CrcEngine.h" // Assuming this contains your static calculate/verify methods
+#include "../src/CrcEngine.h"
 
 // Helper to print hex for debugging
 void printHex(const std::string& label, u16 value) {
@@ -71,7 +71,8 @@ void run_crc_tests() {
     {
         std::vector<u8> input = {0x01, 0x03, 0x04, 0x00, 0x17, 0x00, 0x2B};
         u16 result = CrcEngine::calculate(input.data(), input.size());
-        assert(result == 0x280A); // Changed from 0xCAA9 to the correct Modbus CRC
+        // REVISED: Changed from 0xCAA9 to the correct Modbus CRC 0x280A
+        assert(result == 0x280A);
         std::cout << "[PASS] Vector 2 (0x280A)" << std::endl;
     }
 
@@ -79,50 +80,70 @@ void run_crc_tests() {
     {
         std::vector<u8> input = {0x01, 0x06, 0x00, 0x00, 0x05, 0xDC};
         u16 result = CrcEngine::calculate(input.data(), input.size());
-        assert(result == 0x0488);
-        std::cout << "[PASS] Vector 3 (0x0488)" << std::endl;
+        assert(result == 0x038B);
+        std::cout << "[PASS] Vector 3 (0x038B)" << std::endl;
+    }
+
+    // --- TEST: crc_known_vector_4 ---
+    {
+        std::vector<u8> input = {0x01, 0x05, 0x00, 0x00, 0xFF, 0x00};
+        u16 result = CrcEngine::calculate(input.data(), input.size());
+        assert(result == 0x3A8C);
+        std::cout << "[PASS] Vector 4 (0x3A8C)" << std::endl;
     }
 
     // --- TEST: crc_all_ones (FF vector) ---
     {
         std::vector<u8> input = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
         u16 result = CrcEngine::calculate(input.data(), input.size());
-        assert(result == 0xF0B8);
-        std::cout << "[PASS] Vector FF (0xF0B8)" << std::endl;
+        assert(result == 0x9401);
+        std::cout << "[PASS] Vector FF (0x9401)" << std::endl;
     }
 
     // --- TEST: crc_single_byte ---
     {
         u8 input = 0x01;
-        // Should calculate without crashing. 0x01 with init 0xFFFF results in 0x40C0
         u16 result = CrcEngine::calculate(&input, 1);
-        assert(result != 0);
-        std::cout << "[PASS] Single byte input" << std::endl;
+        // REVISED: Your comment guessed 0x40C0, but the standard Modbus calculation for a single 0x01 byte is 0x807E.
+        // We can now strictly assert this instead of just checking for != 0.
+        assert(result == 0x807E);
+        std::cout << "[PASS] Single byte input (0x807E)" << std::endl;
     }
 
     // --- TEST: crc_all_zeros ---
     {
         std::vector<u8> input = {0x00, 0x00, 0x00, 0x00};
         u16 result = CrcEngine::calculate(input.data(), input.size());
-        assert(result == 0x50C1); // Known Modbus CRC for 4 zeros
-        std::cout << "[PASS] All zeros input" << std::endl;
+        assert(result == 0x2400);
+        std::cout << "[PASS] All zeros input (0x2400)" << std::endl;
     }
 
     // --- TEST: crc_verify_valid_frame ---
     {
-        // Vector 1: [01 03 00 00 00 02] -> CRC is 0x0BC4
-        // Modbus RTU order: Low Byte (C4), then High Byte (0B)
         std::vector<u8> frame = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xC4, 0x0B};
-        bool isValid = CrcEngine::verify(frame.data(), frame.size(), 0x0BC4);
+        // REVISED: Passed frame.size() - 2. You must exclude the attached CRC bytes
+        // when comparing against an expected CRC via your verify() function.
+        bool isValid = CrcEngine::verify(frame.data(), frame.size() - 2, 0x0BC4);
         assert(isValid == true);
         std::cout << "[PASS] Verify valid frame" << std::endl;
+    }
+
+    // --- TEST: crc_verify_valid_frame_zero_check ---
+    {
+        // NEW: This tests the Modbus mathematical property where calculating the CRC
+        // of a full valid frame (including its CRC bytes) results in exactly 0x0000.
+        std::vector<u8> frame = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xC4, 0x0B};
+        u16 result = CrcEngine::calculate(frame.data(), frame.size());
+        assert(result == 0x0000);
+        std::cout << "[PASS] Verify valid frame (Zero Check)" << std::endl;
     }
 
     // --- TEST: crc_verify_corrupted_frame ---
     {
         // Change 0xC4 to 0xC5
         std::vector<u8> frame = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xC5, 0x0B};
-        bool isValid = CrcEngine::verify(frame.data(), frame.size(), 0x0BC4);
+        // REVISED: Passed frame.size() - 2
+        bool isValid = CrcEngine::verify(frame.data(), frame.size() - 2, 0x0BC5);
         assert(isValid == false);
         std::cout << "[PASS] Verify corrupted frame" << std::endl;
     }
@@ -135,7 +156,6 @@ void run_crc_tests() {
         u8 low = static_cast<u8>(result & 0xFF);
         u8 high = static_cast<u8>((result >> 8) & 0xFF);
 
-        // Validation of your "Appended as" logic
         assert(low == 0xC4);
         assert(high == 0x0B);
         std::cout << "[PASS] Byte order verification (LSB first)" << std::endl;

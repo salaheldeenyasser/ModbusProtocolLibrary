@@ -17,3 +17,133 @@ Aborted (core dumped)
 -------------------------------------------
 
 -------- time: 2026-03-15 01:40:12 --------
+Starting Modbus CRC-16 Test Suite...
+
+Byte: 1 -> CRC: 807e
+Byte: 3 -> CRC: 2140
+Byte: 0 -> CRC: f020
+Byte: 0 -> CRC: d8f1
+Byte: 0 -> CRC: 8419
+Byte: 2 -> CRC: bc4
+[PASS] Vector 1 (0x0BC4)
+Byte: 1 -> CRC: 807e
+Byte: 3 -> CRC: 2140
+Byte: 4 -> CRC: 3321
+Byte: 0 -> CRC: 18f3
+Byte: 17 -> CRC: 4b18
+Byte: 0 -> CRC: a4b
+Byte: 2b -> CRC: 280a
+test_crc: test_crc.cpp:74: void run_crc_tests(): Assertion `result == 0xCAA9' failed.
+Aborted (core dumped)
+-------------------------------------------
+
+-------- time: 2026-03-15 01:45:30 --------
+Starting Modbus CRC-16 Test Suite...
+
+[PASS] Vector 1 (0x0BC4)
+test_crc: test_crc.cpp:74: void run_crc_tests(): Assertion `result == 0xCAA9' failed.
+Aborted (core dumped)
+-------------------------------------------
+
+-------- time: 2026-03-15 01:50:00 --------
+Starting Modbus CRC-16 Test Suite...
+
+[PASS] Vector 1 (0x0BC4)
+[PASS] Vector 2 (0x280A)
+test_crc: test_crc.cpp:82: void run_crc_tests(): Assertion `result == 0x0488' failed.
+Aborted (core dumped)
+-------------------------------------------
+
+-------- time: 2026-03-15 01:55:00 --------
+Starting Modbus CRC-16 Test Suite...
+
+[PASS] Vector 1 (0x0BC4)
+[PASS] Vector 2 (0x280A)
+test_crc: test_crc.cpp:82: void run_crc_tests(): Assertion `result == 0x9DB9' failed.
+Aborted (core dumped)
+-------------------------------------------
+
+-------- time: 2026-03-15 02:00:00 --------
+Starting Modbus CRC-16 Test Suite...
+
+[PASS] Vector 1 (0x0BC4)
+[PASS] Vector 2 (0x280A)
+[PASS] Vector 3 (0x038B)
+test_crc: test_crc.cpp:91: void run_crc_tests(): Assertion `result == 0xF0B8' failed.
+Aborted (core dumped)
+-------------------------------------------
+
+-------- time: 2026-03-15 02:05:00 --------
+Starting Modbus CRC-16 Test Suite...
+
+[PASS] Vector 1 (0x0BC4)
+[PASS] Vector 2 (0x280A)
+[PASS] Vector 3 (0x038B)
+[PASS] Vector 4 (0x3A8C)
+test_crc: test_crc.cpp:99: void run_crc_tests(): Assertion `result == 0xF0B8' failed.
+Aborted (core dumped)
+-------------------------------------------
+
+-------- time: 2026-03-15 02:10:00 --------
+Starting Modbus CRC-16 Test Suite...
+
+[PASS] Vector 1 (0x0BC4)
+[PASS] Vector 2 (0x280A)
+[PASS] Vector 3 (0x038B)
+[PASS] Vector 4 (0x3A8C)
+[PASS] Vector FF (0x9401)
+[PASS] Single byte input (0x807E)
+test_crc: test_crc.cpp:117: void run_crc_tests(): Assertion `result == 0x50C1' failed.
+Aborted (core dumped)
+-------------------------------------------
+
+-------- time: 2026-03-15 02:15:00 --------
+Starting Modbus CRC-16 Test Suite...
+
+[PASS] Vector 1 (0x0BC4)
+[PASS] Vector 2 (0x280A)
+[PASS] Vector 3 (0x038B)
+[PASS] Vector 4 (0x3A8C)
+[PASS] Vector FF (0x9401)
+[PASS] Single byte input (0x807E)
+[PASS] All zeros input (0x2400)
+[PASS] Verify valid frame
+[PASS] Verify valid frame (Zero Check)
+test_crc: test_crc.cpp:147: void run_crc_tests(): Assertion `isValid == false' failed.
+Aborted (core dumped)
+-------------------------------------------
+
+-------- time: 2026-03-15 02:20:00 --------
+Starting Modbus CRC-16 Test Suite...
+
+[PASS] Vector 1 (0x0BC4)
+[PASS] Vector 2 (0x280A)
+[PASS] Vector 3 (0x038B)
+[PASS] Vector 4 (0x3A8C)
+[PASS] Vector FF (0x9401)
+[PASS] Single byte input (0x807E)
+[PASS] All zeros input (0x2400)
+[PASS] Verify valid frame
+[PASS] Verify valid frame (Zero Check)
+[PASS] Byte order verification (LSB first)
+
+All CRC tests passed successfully!
+-------------------------------------------
+
+-------- time: 2026-03-15 02:25:00 --------
+Starting Modbus CRC-16 Test Suite...
+
+[PASS] Vector 1 (0x0BC4)
+[PASS] Vector 2 (0x280A)
+[PASS] Vector 3 (0x038B)
+[PASS] Vector 4 (0x3A8C)
+[PASS] Vector FF (0x9401)
+[PASS] Single byte input (0x807E)
+[PASS] All zeros input (0x2400)
+[PASS] Verify valid frame
+[PASS] Verify valid frame (Zero Check)
+[PASS] Verify corrupted frame
+[PASS] Byte order verification (LSB first)
+
+All CRC tests passed successfully!
+-------------------------------------------
