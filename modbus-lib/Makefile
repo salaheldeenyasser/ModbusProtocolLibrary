@@ -19,8 +19,7 @@ LIB_SRCS = \
     src/RegisterMap.cpp \
     src/ModbusClient.cpp \
     src/ModbusServer.cpp \
-    transport/UartTransport_Linux.cpp \
-    transport/TcpTransport.cpp
+    transport/UartTransport_Linux.cpp
 
 LIB_OBJS = $(LIB_SRCS:%.cpp=$(BUILD)/%.o)
 
