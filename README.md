@@ -128,6 +128,7 @@ socat -d -d pty,raw,echo=0 pty,raw,echo=0
 ### Step 2 — Start the server
 
 ```bash
+# Change the port as needed based on socat output
 ./build/modbus_server --mode uart --port /dev/pts/5 --baud 9600 --id 1
 ```
 
@@ -136,6 +137,7 @@ The server console displays the live register map and reacts to client writes.
 ### Step 3 — Run client commands
 
 ```bash
+# Change the port as needed based on socat output
 # Read 3 holding registers from slave 1 at address 0x0000
 ./build/modbus_client --mode uart --port /dev/pts/6 --baud 9600 \
     read-regs --slave 1 --addr 0x0000 --count 3
