@@ -11,13 +11,13 @@ TEST: encode_fc06_request
   Input:  slaveId=1, addr=0x0002, value=100
   Expected: [01 06 00 02 00 64 E8 0A]
 
-TEST: encode_fc05_request_on
-  Input:  slaveId=1, addr=0x0000, ON
-  Expected: [01 05 00 00 FF 00 8C 3A]
-
 TEST: encode_fc05_request_off
   Input:  slaveId=1, addr=0x0000, OFF
   Expected: [01 05 00 00 00 00 CD CA]
+
+TEST: encode_fc05_request_on
+    Input:  slaveId=1, addr=0x0000, ON
+    Expected: [01 05 00 00 FF 00 8C 3A]
 
 TEST: encode_fc16_request
   Input: slaveId=1, startAddr=0, values=[100, 200]
@@ -51,7 +51,6 @@ TEST: decode_fc06_echo
   */
 
 #include "../src/ModbusFrameCodec.h"
-#
 #include <iostream>
 #include <vector>
 #include <cassert>
@@ -77,14 +76,6 @@ void test_encoding() {
         assert(bytesMatch(rtu, expected) && "FC03 encoding failed");
     }
 
-    // TEST: encode_fc06_request
-    {
-        ModbusFrame frame = ModbusFrameCodec::makeWriteSingleRegisterRequest(1, 0x0002, 100);
-        std::vector<u8> rtu = ModbusFrameCodec::encodeRtuRequest(frame);
-        std::vector<u8> expected = {0x01, 0x06, 0x00, 0x02, 0x00, 0x64, 0xE8, 0x0A};
-        assert(bytesMatch(rtu, expected) && "FC06 encoding failed");
-    }
-
     // TEST: encode_fc05_request (ON and OFF)
     {
         ModbusFrame frameOn = ModbusFrameCodec::makeWriteSingleCoilRequest(1, 0x0000, true);
@@ -95,9 +86,24 @@ void test_encoding() {
         ModbusFrame frameOff = ModbusFrameCodec::makeWriteSingleCoilRequest(1, 0x0000, false);
         std::vector<u8> rtuOff = ModbusFrameCodec::encodeRtuRequest(frameOff);
         std::vector<u8> expectedOff = {0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0xCD, 0xCA};
+
         assert(bytesMatch(rtuOff, expectedOff) && "FC05 OFF failed");
     }
 
+    // TEST: encode_fc06_request
+    {
+        ModbusFrame frame = ModbusFrameCodec::makeWriteSingleRegisterRequest(1, 0x0002, 100);
+        std::vector<u8> rtu = ModbusFrameCodec::encodeRtuRequest(frame);
+        std::vector<u8> expected = {0x01, 0x06, 0x00, 0x02, 0x00, 0x64, 0x29, 0xE1};
+
+        if (!bytesMatch(rtu, expected)) {
+            std::cout << "FAIL: FC06 encoding mismatch!\n";
+            std::cout << "  Expected: "; for(auto b : expected) printf("%02X ", b);
+            std::cout << "\n  Actual:   "; for(auto b : rtu)      printf("%02X ", b);
+            std::cout << "\n";
+        }
+        assert(bytesMatch(rtu, expected) && "FC06 encoding failed");
+    }
     std::cout << "  Encoding Tests Passed!\n";
 }
 
