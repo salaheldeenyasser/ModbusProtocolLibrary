@@ -7,11 +7,9 @@
 
 Usage:
   modbus_server --mode uart --port <device> --baud <rate> --id <slaveId>
-  modbus_server --mode tcp  --bind-port <port> --id <slaveId>
 
 Examples:
   modbus_server --mode uart --port /dev/pts/5 --baud 9600 --id 1
-  modbus_server --mode tcp  --bind-port 5020   --id 1
 
 */
 
