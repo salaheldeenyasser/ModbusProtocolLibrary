@@ -130,6 +130,18 @@ socat -d -d pty,raw,echo=0 pty,raw,echo=0
 ```bash
 # Change the port as needed based on socat output
 ./build/modbus_server --mode uart --port /dev/pts/5 --baud 9600 --id 1
+## Expected output:
+╔══════════════════════════════════════════════════╗
+  Holding Registers:
+    [0x0000] Motor Speed0000000000000 = 1500.0 RPM  (raw: 1500)
+    [0x1000] Temperature0000000000000 = 25.3 °C  (raw: 253)
+    [0x2000] Temperature Setpoint0000 = 35.0 °C  (raw: 350)  [writable]
+    [0x3000] Fault Code00000000000000 = 0.0  (raw: 0)
+
+  Coils:
+    [0x0000] Pump Enable0000000000000 = OFF
+    [0x1000] Alarm Reset0000000000000 = OFF
+╚══════════════════════════════════════════════════╝
 ```
 
 The server console displays the live register map and reacts to client writes.
@@ -142,17 +154,40 @@ The server console displays the live register map and reacts to client writes.
 ./build/modbus_client --mode uart --port /dev/pts/6 --baud 9600 \
     read-regs --slave 1 --addr 0x0000 --count 3
 
+## Expected output:
+Reading 3 holding register(s) from slave 1 starting at 0x0000...
+  Register[0x0000] = 1500
+  Register[0x0001] = 253
+  Register[0x0002] = 300
+Completed in 10.6 ms.
+
 # Write a new setpoint (35.0 °C * 10 = 350 raw)
 ./build/modbus_client --mode uart --port /dev/pts/6 --baud 9600 \
     write-reg --slave 1 --addr 0x0002 --value 350
+
+## Expected output:
+ Writing 350 to register 0x0002 on slave 1...
+   Success (echo confirmed).
+ Completed in ~12 ms.
 
 # Turn pump ON
 ./build/modbus_client --mode uart --port /dev/pts/6 --baud 9600 \
     write-coil --slave 1 --addr 0x0000 --value 1
 
+## Expected output:
+Writing coil 0x0000 = ON on slave 1...
+  Success.
+Completed in 10.7 ms.
+
 # Read coil status
 ./build/modbus_client --mode uart --port /dev/pts/6 --baud 9600 \
     read-coils --slave 1 --addr 0x0000 --count 2
+
+## Expected output:
+Reading 2 coil(s) from slave 1 starting at 0x0000...
+  Coil[0x0000] = ON
+  Coil[0x0001] = OFF
+Completed in 10.6 ms.
 ```
 
 ---
