@@ -50,7 +50,7 @@ modbus-lib/
 │   │   └── UartTransport.h  (no OS headers — portable)
 │   └── UartTransport_Linux.cpp
 ├── tests/
-│   ├── MockTransport.h      In-memory transport for unit tests
+│   ├── mock/MockTransport.h      In-memory transport for unit tests
 │   ├── test_crc.cpp         14 CRC tests
 │   ├── test_frame_codec.cpp 42 encoding/decoding tests
 │   ├── test_client.cpp      36 client unit tests
