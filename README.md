@@ -233,16 +233,16 @@ if (!result) {
 ```
 Application Code
       │
-ModbusClient / ModbusServer   (public API)
+ModbusClient / ModbusServer                               (public API)
+      │     
+ModbusFrameCodec                                          (encode/decode PDUs — private)
+      │     
+CrcEngine                                                 (CRC-16/IBM — private)
+      │     
+IModbusTransport                                          (pure abstract interface)
       │
-ModbusFrameCodec               (encode/decode PDUs — private)
-      │
-CrcEngine                      (CRC-16/IBM — private)
-      │
-IModbusTransport               (pure abstract interface)
-      │
-   ┌──┴──┐
-   │     │
+   ┌──┴──────────────┐────────────────┐
+   │                 │                | 
 UartTransport   TcpTransport   MockTransport (tests)
 ```
 
