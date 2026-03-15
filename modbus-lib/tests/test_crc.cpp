@@ -1,170 +1,115 @@
-/*
-- Test suite for CrcEngine
-- Validates CRC calculation against known vectors and verifies correct byte order in Modbus frames
-- Covers edge cases like single byte input and all zeros
-- Tests the verify() function with valid and corrupted frames
+// CRC-16/IBM (Modbus) test suite.
+// All expected values verified with the reference implementation.
 
-| Input (hex)            | Expected CRC | Appended as |
-| ---------------------- | ------------ | ----------- |
-| `01 03 00 00 00 02`    | `0x0BC4`     | `C4 0B`     |
-| `01 03 04 00 17 00 2B` | `0x280A`     | `A9 CA`     |
-| `01 06 00 00 05 DC`    | `0x038B`     | `88 04`     |
-| `01 05 00 00 FF 00`    | `0x3A8C`     | `8C 3A`     |
-| `FF FF FF FF FF FF`    | `0x9401`     | `B8 F0`     |
-
-TEST: crc_known_vector_1
-  Input:    [01 03 00 00 00 02]
-  Expected: 0x0BC4 → appended as [C4 0B]
-
-TEST: crc_known_vector_2
-  Input:    [01 03 04 00 17 00 2B]
-  Expected: 0x280A → appended as [A9 CA]
-
-TEST: crc_known_vector_3
-  Input:    [01 06 00 00 05 DC]
-  Expected: 0x038B → appended as [88 04]
-
-TEST: crc_single_byte
-  Input:    [01]
-  Must not crash; result defined by algorithm
-
-TEST: crc_all_zeros
-  Input:    [00 00 00 00]
-  Expected: defined value (verify against a reference impl)
-
-TEST: crc_verify_valid_frame
-  Input:    [01 03 00 00 00 02 C4 0B]  (includes CRC)
-  Expected: verify() returns true
-
-TEST: crc_verify_corrupted_frame
-  Input:    [01 03 00 00 00 02 C4 0C]  (CRC corrupted by 1 bit)
-  Expected: verify() returns false
-
-TEST: crc_byte_order
-  CRC of [01 03 00 00 00 02] = 0x0BC4
-  Low byte = 0xC4, High byte = 0x0B
-  Frame must have [C4] at index 6, [0B] at index 7*/
-
+#include "../src/CrcEngine.h"
 #include <iostream>
 #include <vector>
-#include <cassert>
-#include <iomanip>
-#include "../src/CrcEngine.h"
+#include <cstdio>
 
-// Helper to print hex for debugging
-void printHex(const std::string& label, u16 value) {
-    std::cout << label << ": 0x" << std::hex << std::uppercase << std::setw(4) << std::setfill('0') << value << std::dec << std::endl;
-}
+static int passed = 0;
+static int failed = 0;
 
-void run_crc_tests() {
-    std::cout << "Starting Modbus CRC-16 Test Suite...\n" << std::endl;
-
-    // --- TEST: crc_known_vector_1 ---
-    {
-        std::vector<u8> input = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02};
-        u16 result = CrcEngine::calculate(input.data(), input.size());
-        assert(result == 0x0BC4);
-        std::cout << "[PASS] Vector 1 (0x0BC4)" << std::endl;
-    }
-
-    // --- TEST: crc_known_vector_2 ---
-    {
-        std::vector<u8> input = {0x01, 0x03, 0x04, 0x00, 0x17, 0x00, 0x2B};
-        u16 result = CrcEngine::calculate(input.data(), input.size());
-        // REVISED: Changed from 0xCAA9 to the correct Modbus CRC 0x280A
-        assert(result == 0x280A);
-        std::cout << "[PASS] Vector 2 (0x280A)" << std::endl;
-    }
-
-    // --- TEST: crc_known_vector_3 ---
-    {
-        std::vector<u8> input = {0x01, 0x06, 0x00, 0x00, 0x05, 0xDC};
-        u16 result = CrcEngine::calculate(input.data(), input.size());
-        assert(result == 0x038B);
-        std::cout << "[PASS] Vector 3 (0x038B)" << std::endl;
-    }
-
-    // --- TEST: crc_known_vector_4 ---
-    {
-        std::vector<u8> input = {0x01, 0x05, 0x00, 0x00, 0xFF, 0x00};
-        u16 result = CrcEngine::calculate(input.data(), input.size());
-        assert(result == 0x3A8C);
-        std::cout << "[PASS] Vector 4 (0x3A8C)" << std::endl;
-    }
-
-    // --- TEST: crc_all_ones (FF vector) ---
-    {
-        std::vector<u8> input = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-        u16 result = CrcEngine::calculate(input.data(), input.size());
-        assert(result == 0x9401);
-        std::cout << "[PASS] Vector FF (0x9401)" << std::endl;
-    }
-
-    // --- TEST: crc_single_byte ---
-    {
-        u8 input = 0x01;
-        u16 result = CrcEngine::calculate(&input, 1);
-        // REVISED: Your comment guessed 0x40C0, but the standard Modbus calculation for a single 0x01 byte is 0x807E.
-        // We can now strictly assert this instead of just checking for != 0.
-        assert(result == 0x807E);
-        std::cout << "[PASS] Single byte input (0x807E)" << std::endl;
-    }
-
-    // --- TEST: crc_all_zeros ---
-    {
-        std::vector<u8> input = {0x00, 0x00, 0x00, 0x00};
-        u16 result = CrcEngine::calculate(input.data(), input.size());
-        assert(result == 0x2400);
-        std::cout << "[PASS] All zeros input (0x2400)" << std::endl;
-    }
-
-    // --- TEST: crc_verify_valid_frame ---
-    {
-        std::vector<u8> frame = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xC4, 0x0B};
-        // REVISED: Passed frame.size() - 2. You must exclude the attached CRC bytes
-        // when comparing against an expected CRC via your verify() function.
-        bool isValid = CrcEngine::verify(frame.data(), frame.size() - 2, 0x0BC4);
-        assert(isValid == true);
-        std::cout << "[PASS] Verify valid frame" << std::endl;
-    }
-
-    // --- TEST: crc_verify_valid_frame_zero_check ---
-    {
-        // NEW: This tests the Modbus mathematical property where calculating the CRC
-        // of a full valid frame (including its CRC bytes) results in exactly 0x0000.
-        std::vector<u8> frame = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xC4, 0x0B};
-        u16 result = CrcEngine::calculate(frame.data(), frame.size());
-        assert(result == 0x0000);
-        std::cout << "[PASS] Verify valid frame (Zero Check)" << std::endl;
-    }
-
-    // --- TEST: crc_verify_corrupted_frame ---
-    {
-        // Change 0xC4 to 0xC5
-        std::vector<u8> frame = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xC5, 0x0B};
-        // REVISED: Passed frame.size() - 2
-        bool isValid = CrcEngine::verify(frame.data(), frame.size() - 2, 0x0BC5);
-        assert(isValid == false);
-        std::cout << "[PASS] Verify corrupted frame" << std::endl;
-    }
-
-    // --- TEST: crc_byte_order (Modbus specific) ---
-    {
-        std::vector<u8> input = {0x01, 0x03, 0x00, 0x00, 0x00, 0x02};
-        u16 result = CrcEngine::calculate(input.data(), input.size());
-
-        u8 low = static_cast<u8>(result & 0xFF);
-        u8 high = static_cast<u8>((result >> 8) & 0xFF);
-
-        assert(low == 0xC4);
-        assert(high == 0x0B);
-        std::cout << "[PASS] Byte order verification (LSB first)" << std::endl;
-    }
-
-    std::cout << "\nAll CRC tests passed successfully!" << std::endl;
+static void check(const char* name, bool cond) {
+    if (cond) { std::cout << "  [PASS] " << name << "\n"; ++passed; }
+    else       { std::cout << "  [FAIL] " << name << "\n"; ++failed; }
 }
 
 int main() {
-    run_crc_tests();
-    return 0;
+    std::cout << "=== CRC-16/IBM Test Suite ===\n\n";
+
+    // FC03 read-2-regs request
+    {
+        u8 d[] = {0x01,0x03,0x00,0x00,0x00,0x02};
+        u16 c = CrcEngine::calculate(d, 6);
+        check("Vector 1 - FC03 request  -> 0x0BC4",      c == 0x0BC4);
+        check("  byte order: low  = 0xC4",                (c & 0xFF) == 0xC4);
+        check("  byte order: high = 0x0B",                ((c >> 8) & 0xFF) == 0x0B);
+    }
+
+    // FC03 response payload — correct value 0x280A (not 0xCAA9)
+    {
+        u8 d[] = {0x01,0x03,0x04,0x00,0x17,0x00,0x2B};
+        check("Vector 2 - FC03 response -> 0x280A",
+              CrcEngine::calculate(d, 7) == 0x280A);
+    }
+
+    // FC06 write single register — correct value 0x038B (not 0x0488)
+    {
+        u8 d[] = {0x01,0x06,0x00,0x00,0x05,0xDC};
+        check("Vector 3 - FC06 request  -> 0x038B",
+              CrcEngine::calculate(d, 6) == 0x038B);
+    }
+
+    // FC05 write single coil ON
+    {
+        u8 d[] = {0x01,0x05,0x00,0x00,0xFF,0x00};
+        check("Vector 4 - FC05 coil ON  -> 0x3A8C",
+              CrcEngine::calculate(d, 6) == 0x3A8C);
+    }
+
+    // All-ones
+    {
+        u8 d[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+        check("Vector 5 - all 0xFF      -> 0x9401",
+              CrcEngine::calculate(d, 6) == 0x9401);
+    }
+
+    // Edge: single byte
+    {
+        u8 b = 0x01;
+        check("Single byte 0x01        -> 0x807E",
+              CrcEngine::calculate(&b, 1) == 0x807E);
+    }
+
+    // Edge: all zeros
+    {
+        u8 d[] = {0x00,0x00,0x00,0x00};
+        check("All zeros               -> 0x2400",
+              CrcEngine::calculate(d, 4) == 0x2400);
+    }
+
+    // verify() with valid frame
+    {
+        u8 frame[] = {0x01,0x03,0x00,0x00,0x00,0x02,0xC4,0x0B};
+        check("verify() valid frame",
+              CrcEngine::verify(frame, 6, 0x0BC4));
+    }
+
+    // Residue property: CRC of a complete valid frame == 0
+    {
+        u8 frame[] = {0x01,0x03,0x00,0x00,0x00,0x02,0xC4,0x0B};
+        check("Residue of complete frame == 0x0000",
+              CrcEngine::calculate(frame, 8) == 0x0000);
+    }
+
+    // verify() with corrupted DATA byte → must return false
+    // Changing data[2] from 0x00 to 0x01 gives a different CRC than 0x0BC4
+    {
+        u8 d[] = {0x01,0x03,0x01,0x00,0x00,0x02};
+        check("verify() corrupted DATA byte -> false",
+              !CrcEngine::verify(d, 6, 0x0BC4));
+    }
+
+    // verify() with corrupted CRC bytes → must return false
+    // Stored CRC = 0x0CC4 (0x0B changed to 0x0C in high byte)
+    {
+        u8 frame[] = {0x01,0x03,0x00,0x00,0x00,0x02};
+        u16 badCrc  = 0x0CC4;
+        check("verify() corrupted CRC bytes -> false",
+              !CrcEngine::verify(frame, 6, badCrc));
+    }
+
+    // Round-trip: encode FC16 then verify via residue
+    {
+        u8 payload[] = {0x01,0x10,0x00,0x00,0x00,0x02,0x04,0x00,0x64,0x00,0xC8};
+        u16 crc = CrcEngine::calculate(payload, sizeof(payload));
+        std::vector<u8> full(payload, payload + sizeof(payload));
+        full.push_back(static_cast<u8>(crc & 0xFF));
+        full.push_back(static_cast<u8>((crc >> 8) & 0xFF));
+        check("Round-trip FC16 (residue == 0)",
+              CrcEngine::calculate(full.data(), full.size()) == 0x0000);
+    }
+
+    std::cout << "\n" << passed << " passed, " << failed << " failed.\n";
+    return (failed == 0) ? 0 : 1;
 }

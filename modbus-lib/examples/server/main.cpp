@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     // For simplicity, we'll just use hardcoded config here
     // In a real application, you'd parse command-line arguments or a config file
     UartTransport::Config uartConfig{
-        .devicePath = "/dev/pts/5",
+        .devicePath = "",
         .baudRate = 9600,
         .dataBits = 8,
         .parity = UartTransport::Parity::None,
