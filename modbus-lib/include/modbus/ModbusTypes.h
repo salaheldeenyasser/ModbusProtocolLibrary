@@ -1,6 +1,9 @@
 #ifndef MODBUS_TYPES_H
 #define MODBUS_TYPES_H
-#include <iostream>
+
+// Core C++ standard library — minimal set needed at the type level.
+// Implementation-only headers (<mutex>, <thread>, <atomic>, etc.) are
+// included directly by the headers that need them, not here.
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -10,41 +13,40 @@
 #include <span>
 #include <algorithm>
 #include <chrono>
-#include <mutex>
-#include <unordered_map>
 #include <functional>
-#include <atomic>
-#include <thread>
+#include <stdexcept>
 
-#define sz size_t
-#define u8 uint8_t
-#define u16 uint16_t
-#define u32 uint32_t
-#define u64 uint64_t
+// Type aliases — 'using' respects scope; #define does not.
+using u8  = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+using sz  = size_t;
 
-const int MAX_HOLDING_REGISTERS = 125;
-const int MAX_COILS = 2000;
+// Modbus protocol limits
+static constexpr u16 MODBUS_MAX_HOLDING_REGISTERS = 125;
+static constexpr u16 MODBUS_MAX_COILS             = 2000;
+static constexpr u16 MODBUS_MAX_INPUT_REGISTERS   = 125;
+static constexpr u16 MODBUS_MAX_DISCRETE_INPUTS   = 2000;
 
-
-
-enum class FunctionCode : uint8_t {
-  ReadCoils = 0x01,
-  ReadDiscreteInputs = 0x02,
-  ReadHoldingRegisters = 0x03,
-  ReadInputRegisters = 0x04,
-  WriteSingleCoil = 0x05,
-  WriteSingleRegister = 0x06,
-  WriteMultipleCoils = 0x0F,
-  WriteMultipleRegisters = 0x10,
-  Diagnostic = 0x08,
-  ReadWriteMultipleRegisters = 0x17,
+enum class FunctionCode : u8 {
+    ReadCoils                  = 0x01,
+    ReadDiscreteInputs         = 0x02,
+    ReadHoldingRegisters       = 0x03,
+    ReadInputRegisters         = 0x04,
+    WriteSingleCoil            = 0x05,
+    WriteSingleRegister        = 0x06,
+    Diagnostic                 = 0x08,
+    WriteMultipleCoils         = 0x0F,
+    WriteMultipleRegisters     = 0x10,
+    ReadWriteMultipleRegisters = 0x17,
 };
 
-enum class ExceptionCode : uint8_t {
-  IllegalFunction = 0x01,
-  IllegalDataAddress = 0x02,
-  IllegalDataValue = 0x03,
-  SlaveDeviceFailure = 0x04,
+enum class ExceptionCode : u8 {
+    IllegalFunction    = 0x01,
+    IllegalDataAddress = 0x02,
+    IllegalDataValue   = 0x03,
+    SlaveDeviceFailure = 0x04,
 };
 
 #endif // MODBUS_TYPES_H
