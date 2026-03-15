@@ -98,7 +98,7 @@ ModbusFrame ModbusServer::buildExceptionResponse(u8 fc, ExceptionCode code) {
     return f;
 }
 
-// ─── FC handlers (all were missing in original) ───────────────────────────────
+// ─── FC handlers ───────────────────────────────
 
 // Helper: push a big-endian u16 into a byte vector
 static void pushU16(std::vector<u8>& v, u16 val) {
