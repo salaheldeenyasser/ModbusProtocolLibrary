@@ -44,29 +44,52 @@ bool ModbusServer::isRunning() const {
 bool ModbusServer::processOneRequest() {
     if (!transport_->isOpen()) return false;
 
-    // Receive up to 256 bytes with a short timeout (100 ms)
+    // 1. Receive data from the transport
+    // We use a short timeout (100ms). If it times out, we return 'false'
+    // to the worker thread which will then yield/sleep briefly before trying again.
     auto recvResult = transport_->receive(256, std::chrono::milliseconds(100));
-    if (!recvResult) return false;                   // timeout or error — nothing to do
 
-    // Decode (verifies CRC internally)
+    if (!recvResult) {
+        // Log error only if it's NOT a timeout. Timeouts are normal during idle.
+        // if (recvResult.error().type() != ProtocolErrorCode::Timeout) { ... }
+        return false;
+    }
+
+    // 2. Decode the incoming bytes as an RTU Request
+    // Note: Even though your function is named decodeRtuResponse, in your
+    // current codec it is a generic CRC/Frame validator.
     auto decodeResult = ModbusFrameCodec::decodeRtuResponse(
         std::span<const u8>(recvResult.value()));
-    if (!decodeResult) return false;                 // bad CRC or too short — discard
+
+    if (!decodeResult) {
+        // Discard frame if CRC is invalid or length is wrong
+        return false;
+    }
 
     const ModbusFrame& request = decodeResult.value();
 
-    // Broadcast (slaveId == 0) OR addressed to us?
+    // 3. Slave ID Validation
+    // Broadcast (slaveId == 0) OR addressed specifically to this server's ID?
     bool isBroadcast = (request.slaveID == 0);
-    if (!isBroadcast && request.slaveID != slaveId_) return false;
+    if (!isBroadcast && request.slaveID != slaveId_) {
+        return false; // Silently ignore frames meant for other slaves
+    }
 
-    // Dispatch
+    // 4. Dispatch to the specific Function Code handler
     ModbusFrame response = handleRequest(request);
 
-    // Never respond to a broadcast
+    // 5. Send Response (if not a broadcast)
     if (!isBroadcast) {
+        // IMPORTANT: Ensure the response frame carries the correct Slave ID
+        response.slaveID = slaveId_;
+
+        // Use the encoder to wrap the response in a header and CRC
+        // In your codec, encodeRtuRequest acts as the generic RTU wrapper.
         auto responseBytes = ModbusFrameCodec::encodeRtuRequest(response);
+
         transport_->send(std::span<const u8>(responseBytes));
     }
+
     return true;
 }
 
