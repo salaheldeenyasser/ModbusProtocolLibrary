@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/modbus_server.dir/examples/server/main.cpp.o -o modbus_server  libmodbus_lib.a 

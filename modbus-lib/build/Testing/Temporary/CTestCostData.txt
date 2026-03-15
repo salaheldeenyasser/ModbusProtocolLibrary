@@ -1,0 +1,7 @@
+test_crc 1 0.00432522
+test_frame_codec 1 0.00381138
+test_client 1 0.00413851
+test_server 1 0.00486775
+test_integration 1 0.00665862
+test_tcp_codec 1 0.00409929
+---

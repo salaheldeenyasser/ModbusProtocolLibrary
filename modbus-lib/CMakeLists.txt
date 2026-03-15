@@ -27,10 +27,10 @@ elseif(WIN32)
 endif()
 
 # TCP transport (POSIX sockets — works on Linux and macOS)
-if(UNIX)
-    target_sources(modbus_lib PRIVATE transport/TcpTransport.cpp)
-    message(STATUS "TCP transport: enabled")
-endif()
+# if(UNIX)
+#     target_sources(modbus_lib PRIVATE transport/TcpTransport.cpp)
+#     message(STATUS "TCP transport: enabled")
+# endif()
 
 target_include_directories(modbus_lib
     PUBLIC  include/

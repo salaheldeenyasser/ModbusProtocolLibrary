@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/test_client.dir/tests/test_client.cpp.o -o test_client  libmodbus_lib.a 

@@ -1,0 +1,385 @@
+Start testing: Mar 15 20:41 EET
+----------------------------------------------------------
+1/6 Testing: test_crc
+1/6 Test: test_crc
+Command: "/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/test_crc"
+Directory: /home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build
+"test_crc" start time: Mar 15 20:41 EET
+Output:
+----------------------------------------------------------
+=== CRC-16/IBM Test Suite ===
+
+  [PASS] Vector 1 - FC03 request  -> 0x0BC4
+  [PASS]   byte order: low  = 0xC4
+  [PASS]   byte order: high = 0x0B
+  [PASS] Vector 2 - FC03 response -> 0x280A
+  [PASS] Vector 3 - FC06 request  -> 0x038B
+  [PASS] Vector 4 - FC05 coil ON  -> 0x3A8C
+  [PASS] Vector 5 - all 0xFF      -> 0x9401
+  [PASS] Single byte 0x01        -> 0x807E
+  [PASS] All zeros               -> 0x2400
+  [PASS] verify() valid frame
+  [PASS] Residue of complete frame == 0x0000
+  [PASS] verify() corrupted DATA byte -> false
+  [PASS] verify() corrupted CRC bytes -> false
+  [PASS] Round-trip FC16 (residue == 0)
+
+14 passed, 0 failed.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_crc" end time: Mar 15 20:41 EET
+"test_crc" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/6 Testing: test_frame_codec
+2/6 Test: test_frame_codec
+Command: "/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/test_frame_codec"
+Directory: /home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build
+"test_frame_codec" start time: Mar 15 20:41 EET
+Output:
+----------------------------------------------------------
+=== ModbusFrameCodec Test Suite ===
+
+--- Encoding ---
+  [PASS] FC03 read 2 regs
+  [PASS] FC05 coil ON
+  [PASS] FC05 coil OFF
+  [PASS] FC06 write single register
+  [PASS] Big-endian address hi=0x01
+  [PASS] Big-endian address lo=0x00
+  [PASS] FC16 length == 13
+  [PASS] FC16 FC byte = 0x10
+  [PASS] FC16 qty hi = 0x00
+  [PASS] FC16 qty lo = 0x02
+  [PASS] FC16 byte count = 0x04
+  [PASS] FC16 reg[0] hi = 0x00
+  [PASS] FC16 reg[0] lo = 0x64
+  [PASS] FC16 reg[1] hi = 0x00
+  [PASS] FC16 reg[1] lo = 0xC8
+  [PASS] FC0F length == 10
+  [PASS] FC0F byte count = 1
+  [PASS] FC0F coil byte = 0x05
+
+--- Decoding ---
+  [PASS] FC03 valid - has value
+  [PASS] FC03 valid - slaveID = 1
+  [PASS] FC03 valid - FC = 0x03
+  [PASS] FC03 valid - data size = 5
+  [PASS] FC03 valid - reg[0] = 23
+  [PASS] FC03 valid - reg[1] = 43
+  [PASS] Exception - has value
+  [PASS] Exception - FC = 0x83
+  [PASS] Exception - isExceptionResponse()
+  [PASS] Exception - original FC = 0x03
+  [PASS] Exception - exceptionCode = 0x02
+  [PASS] CRC mismatch - is unexpected
+  [PASS] CRC mismatch - error code
+  [PASS] Too short - is unexpected
+  [PASS] FC06 echo - has value
+  [PASS] FC06 echo - FC = 0x06
+  [PASS] FC06 echo - addr hi
+  [PASS] FC06 echo - addr lo
+  [PASS] FC06 echo - val hi
+  [PASS] FC06 echo - val lo
+  [PASS] Round-trip - has value
+  [PASS] Round-trip - reg[0] = 10
+  [PASS] Round-trip - reg[1] = 20
+  [PASS] Round-trip - reg[2] = 30
+
+42 passed, 0 failed.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_frame_codec" end time: Mar 15 20:41 EET
+"test_frame_codec" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/6 Testing: test_client
+3/6 Test: test_client
+Command: "/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/test_client"
+Directory: /home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build
+"test_client" start time: Mar 15 20:41 EET
+Output:
+----------------------------------------------------------
+=== ModbusClient Unit Tests ===
+
+--- readHoldingRegisters ---
+  [PASS] result has value
+  [PASS] two values returned
+  [PASS] reg[0] == 23
+  [PASS] reg[1] == 43
+  [PASS] sent length == 8
+  [PASS] sent[0] slaveID
+  [PASS] sent[1] FC=0x03
+  [PASS] sent[6] CRC_lo
+  [PASS] sent[7] CRC_hi
+
+--- writeSingleRegister ---
+  [PASS] result is success
+
+--- writeSingleCoil ---
+  [PASS] coil ON - success
+  [PASS] coil ON byte[4] = 0xFF
+  [PASS] coil ON byte[5] = 0x00
+  [PASS] coil OFF - success
+  [PASS] coil OFF byte[4] = 0x00
+  [PASS] coil OFF byte[5] = 0x00
+
+--- retry on timeout ---
+  [PASS] timeout returns error
+  [PASS] error is Timeout
+  [PASS] retried 2 times (2 sends)
+
+--- Modbus exception (no retry) ---
+  [PASS] exception returns error
+  [PASS] error is ModbusException
+  [PASS] exception code = 0x02
+  [PASS] no retry on exception (1 send)
+
+--- writeMultipleRegisters ---
+  [PASS] write multiple - success
+  [PASS] FC16 FC byte = 0x10
+  [PASS] FC16 byteCount = 0x04
+  [PASS] FC16 reg[0] lo = 0x64
+  [PASS] FC16 reg[1] lo = 0xC8
+
+--- CRC mismatch retry ---
+  [PASS] CRC retry - eventually succeeds
+  [PASS] CRC retry - 2 sends made
+
+--- readCoils ---
+  [PASS] readCoils - has value
+  [PASS] readCoils - 4 values
+  [PASS] coil[0] = OFF
+  [PASS] coil[1] = ON
+  [PASS] coil[2] = OFF
+  [PASS] coil[3] = ON
+
+36 passed, 0 failed.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_client" end time: Mar 15 20:41 EET
+"test_client" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/6 Testing: test_server
+4/6 Test: test_server
+Command: "/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/test_server"
+Directory: /home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build
+"test_server" start time: Mar 15 20:41 EET
+Output:
+----------------------------------------------------------
+=== ModbusServer Unit Tests ===
+
+--- FC03 Read Holding Registers ---
+  [PASS] FC03 - got response
+  [PASS] FC03 - FC = 0x03
+  [PASS] FC03 - byteCount = 4
+  [PASS] FC03 - reg[0] = 1500
+  [PASS] FC03 - reg[1] = 253
+
+--- FC03 Illegal Quantity ---
+  [PASS] FC03 qty>125 - got response
+  [PASS] FC03 qty>125 - is exception
+  [PASS] FC03 qty>125 - original FC=0x03
+
+--- FC03 Illegal Address ---
+  [PASS] FC03 bad addr - got response
+  [PASS] FC03 bad addr - is exception
+
+--- FC06 Write Single Register ---
+  [PASS] FC06 - got response
+  [PASS] FC06 - FC = 0x06
+  [PASS] FC06 - register updated
+  [PASS] FC06 - echo addr hi = 0x00
+  [PASS] FC06 - echo addr lo = 0x02
+  [PASS] FC06 - echo val  lo = 0x5E
+
+--- FC05 Write Single Coil ---
+  [PASS] FC05 ON - got response
+  [PASS] FC05 ON - FC = 0x05
+  [PASS] FC05 ON - coil stored
+  [PASS] FC05 OFF - got response
+  [PASS] FC05 OFF - coil stored
+
+--- FC05 Illegal Coil Value ---
+  [PASS] FC05 bad value - is exception
+  [PASS] FC05 bad value - code=0x03
+
+--- FC16 Write Multiple Registers ---
+  [PASS] FC16 - got response
+  [PASS] FC16 - FC = 0x10
+  [PASS] FC16 - reg[0] = 100
+  [PASS] FC16 - reg[1] = 200
+
+--- FC01 Read Coils ---
+  [PASS] FC01 - got response
+  [PASS] FC01 - FC = 0x01
+  [PASS] FC01 - byteCount = 1
+  [PASS] FC01 - packed = 0x05
+
+--- Illegal Function Code ---
+  [PASS] illegal FC - got response
+  [PASS] illegal FC - is exception
+  [PASS] illegal FC - exception code
+
+--- Wrong Slave ID ---
+  [PASS] wrong slave ID - no response sent
+
+--- Write Callback ---
+  [PASS] callback fired
+  [PASS] callback addr = 0x0002
+  [PASS] callback val  = 1500
+
+38 passed, 0 failed.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_server" end time: Mar 15 20:41 EET
+"test_server" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/6 Testing: test_integration
+5/6 Test: test_integration
+Command: "/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/test_integration"
+Directory: /home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build
+"test_integration" start time: Mar 15 20:41 EET
+Output:
+----------------------------------------------------------
+=== Integration Tests (Client <-> Server) ===
+
+--- Integration: readHoldingRegisters ---
+  [PASS] result has value
+  [PASS] 3 values returned
+  [PASS] reg[0]=1500
+  [PASS] reg[1]=253
+  [PASS] reg[2]=300
+
+--- Integration: writeSingleRegister ---
+  [PASS] write success
+  [PASS] register updated to 400
+
+--- Integration: writeSingleCoil ---
+  [PASS] coil ON success
+  [PASS] coil stored ON
+  [PASS] coil OFF success
+  [PASS] coil stored OFF
+
+--- Integration: readCoils ---
+  [PASS] readCoils has value
+  [PASS] coil[0]=ON
+  [PASS] coil[1]=OFF
+  [PASS] coil[2]=ON
+
+--- Integration: writeMultipleRegisters ---
+  [PASS] write multiple success
+  [PASS] reg[0]=10
+  [PASS] reg[1]=20
+  [PASS] reg[2]=30
+
+--- Integration: exception propagation ---
+  [PASS] exception - returns error
+  [PASS] exception - ModbusException
+  [PASS] exception - IllegalDataAddress
+
+--- Integration: write callback ---
+  [PASS] write success
+  [PASS] callback fired
+  [PASS] callback addr=2
+  [PASS] callback val=999
+
+--- Integration: readInputRegisters ---
+  [PASS] readInputRegs has value
+  [PASS] inputReg[0]=4800
+  [PASS] inputReg[1]=236
+
+--- Integration: illegal function code ---
+  [PASS] illegal FC - responded
+  [PASS] illegal FC - 0x87
+  [PASS] illegal FC - code 0x01
+
+32 passed, 0 failed.
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"test_integration" end time: Mar 15 20:41 EET
+"test_integration" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/6 Testing: test_tcp_codec
+6/6 Test: test_tcp_codec
+Command: "/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/test_tcp_codec"
+Directory: /home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build
+"test_tcp_codec" start time: Mar 15 20:41 EET
+Output:
+----------------------------------------------------------
+=== ModbusTcpCodec Test Suite ===
+
+--- TCP encode FC03 request ---
+  [PASS] FC03 TCP length = 12 bytes
+  [PASS] FC03 TCP bytes match
+  [PASS] Transaction ID hi = 0x00
+  [PASS] Transaction ID lo = 0x01
+  [PASS] Protocol ID = 0x0000
+  [PASS] Length = 6
+  [PASS] Unit ID = 1
+  [PASS] FC = 0x03
+  [PASS] No CRC bytes at end
+
+--- TCP encode FC06 request ---
+  [PASS] FC06 TCP length = 12
+  [PASS] Length field = 6
+  [PASS] FC = 0x06
+  [PASS] val hi = 0x01
+  [PASS] val lo = 0x5E
+
+--- TCP encode FC16 (write multiple registers) ---
+  [PASS] FC16 TCP length = 17
+  [PASS] Length field = 11
+  [PASS] FC = 0x10
+
+--- TCP decode FC03 response ---
+  [PASS] result has value
+  [PASS] slaveID = 1
+  [PASS] FC = 0x03
+  [PASS] data size = 5
+  [PASS] reg[0] = 23
+  [PASS] reg[1] = 43
+
+--- TCP decode exception response ---
+  [PASS] exception - has value
+  [PASS] exception - FC = 0x83
+  [PASS] exception - isExceptionResponse
+  [PASS] exception - original FC = 0x03
+  [PASS] exception - code = 0x02
+
+--- TCP decode too short ---
+  [PASS] too short - is unexpected
+
+--- TCP decode wrong protocol ID ---
+  [PASS] wrong protocol - is unexpected
+
+--- TCP encode -> decode round trip ---
+  [PASS] round-trip - has value
+  [PASS] round-trip - slaveID = 1
+  [PASS] round-trip - reg[0] = 10
+  [PASS] round-trip - reg[1] = 20
+  [PASS] round-trip - reg[2] = 30
+
+35 passed, 0 failed.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"test_tcp_codec" end time: Mar 15 20:41 EET
+"test_tcp_codec" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Mar 15 20:41 EET

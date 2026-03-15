@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/test_frame_codec.dir/tests/test_frame_codec.cpp.o -o test_frame_codec  libmodbus_lib.a 

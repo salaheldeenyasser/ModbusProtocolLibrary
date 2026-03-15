@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmodbus_lib.a CMakeFiles/modbus_lib.dir/src/CrcEngine.cpp.o CMakeFiles/modbus_lib.dir/src/ModbusFrameCodec.cpp.o CMakeFiles/modbus_lib.dir/src/ModbusClient.cpp.o CMakeFiles/modbus_lib.dir/src/ModbusServer.cpp.o CMakeFiles/modbus_lib.dir/src/RegisterMap.cpp.o CMakeFiles/modbus_lib.dir/transport/UartTransport_Linux.cpp.o
+/usr/bin/ranlib libmodbus_lib.a

@@ -1,0 +1,12 @@
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/modbus_lib.dir
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/modbus_server.dir
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/modbus_client.dir
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/test_crc.dir
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/test_frame_codec.dir
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/test_client.dir
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/test_server.dir
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/test_integration.dir
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/test_tcp_codec.dir
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/test.dir
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/edit_cache.dir
+/home/seyho/Projects/ModbusProtocolLibrary/modbus-lib/build/CMakeFiles/rebuild_cache.dir

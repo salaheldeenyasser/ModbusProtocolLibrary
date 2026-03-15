@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/test_integration.dir/tests/test_integration.cpp.o -o test_integration  libmodbus_lib.a 
