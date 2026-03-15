@@ -5,45 +5,63 @@
 #include "../include/modbus/ModbusTypes.h"
 #include "CrcEngine.h"
 
-class ModbusFrameCodec
-{
+// Stateless encode/decode utilities.
+// These functions know the Modbus PDU structure but nothing about I/O.
+class ModbusFrameCodec {
 public:
-  static std::vector<u8> encodeRtuRequest(const ModbusFrame &frame);
-  static std::expected<ModbusFrame, ModbusError>decodeRtuResponse(
-    std::span<const u8> buffer);
+    // ── RTU ──────────────────────────────────────────────────────────────────
 
-  // Factory methods for common Modbus requests
-  // FC 0x01 - Read Coils
-  static ModbusFrame makeReadCoilsRequest(
-      u8 slaveId, u16 startAddr, u16 count);
-  // FC 0x02 - Read Discrete Inputs
-  static ModbusFrame makeReadDiscreteInputsRequest(
-      u8 slaveId, u16 startAddr, u16 count);
-  // FC 0x03 - Read Holding Registers
-  static ModbusFrame makeReadHoldingRegistersRequest(
-      u8 slaveId, u16 startAddr, u16 count);
-  // FC 0x04 - Read Input Registers
-  static ModbusFrame makeReadInputRegistersRequest(
-      u8 slaveId, u16 startAddr, u16 count);
-  // FC 0x05 - Write Single Coil
-  static ModbusFrame makeWriteSingleCoilRequest(
-      u8 slaveId, u16 coilAddr, bool value);
-  // FC 0x06 - Write Single Register
-  static ModbusFrame makeWriteSingleRegisterRequest(
-      u8 slaveId, u16 registerAddr, u16 value);
-  // FC 0x0F - Write Multiple Coils
-  static ModbusFrame makeWriteMultipleCoilsRequest(
-      u8 slaveId, u16 startAddr, const std::vector<bool> &values);
-  // FC 0x10 - Write Multiple Registers
-  static ModbusFrame makeWriteMultipleRegistersRequest(
-      u8 slaveId, u16 startAddr, const std::vector<u16> &values);
-  // FC 0x08 - Diagnostics
-  static ModbusFrame makeDiagnosticRequest(
-      u8 slaveId, u16 subFunction, const std::vector<u16> &data);
-  // FC 0x17 - Read/Write Multiple Registers
-  static ModbusFrame makeReadWriteMultipleRegistersRequest(
-      u8 slaveId, u16 readStartAddr, u16 readCount, u16 writeStartAddr,
-      const std::vector<u16> &writeValues);
+    // Encode a ModbusFrame to RTU bytes: [SlaveID | FC | data... | CRC_Lo | CRC_Hi]
+    static std::vector<u8> encodeRtuRequest(const ModbusFrame& frame);
+
+    // Decode RTU bytes to a ModbusFrame.
+    // Returns unexpected on CRC mismatch, too-short frame, or Modbus exception.
+    static std::expected<ModbusFrame, ModbusError>
+    decodeRtuResponse(std::span<const u8> buffer);
+
+    // ── Request factory methods ───────────────────────────────────────────────
+
+    static ModbusFrame makeReadCoilsRequest(
+        u8 slaveId, u16 startAddr, u16 count);
+
+    static ModbusFrame makeReadDiscreteInputsRequest(
+        u8 slaveId, u16 startAddr, u16 count);
+
+    static ModbusFrame makeReadHoldingRegistersRequest(
+        u8 slaveId, u16 startAddr, u16 count);
+
+    static ModbusFrame makeReadInputRegistersRequest(
+        u8 slaveId, u16 startAddr, u16 count);
+
+    static ModbusFrame makeWriteSingleCoilRequest(
+        u8 slaveId, u16 coilAddr, bool value);
+
+    static ModbusFrame makeWriteSingleRegisterRequest(
+        u8 slaveId, u16 registerAddr, u16 value);
+
+    // BUG FIX: previously missing coil byte-packing
+    static ModbusFrame makeWriteMultipleCoilsRequest(
+        u8 slaveId, u16 startAddr, const std::vector<bool>& values);
+
+    // BUG FIX: previously missing register value bytes
+    static ModbusFrame makeWriteMultipleRegistersRequest(
+        u8 slaveId, u16 startAddr, const std::vector<u16>& values);
 };
 
 #endif // MODBUS_FRAME_CODEC_H
+
+// ── TCP (MBAP) codec ──────────────────────────────────────────────────────────
+// Modbus TCP wraps the standard PDU in a 6-byte MBAP header:
+//   [TransactionID 2B | ProtocolID 2B | Length 2B | UnitID 1B | FC 1B | Data]
+// No CRC is used; TCP's own checksum provides integrity.
+class ModbusTcpCodec {
+public:
+    // Encode a frame to Modbus TCP bytes (MBAP + PDU, no CRC).
+    static std::vector<u8>
+    encodeTcpRequest(const ModbusFrame& frame, u16 transactionId);
+
+    // Decode Modbus TCP bytes → ModbusFrame.
+    // The buffer must contain the complete MBAP header + PDU.
+    static std::expected<ModbusFrame, ModbusError>
+    decodeTcpResponse(std::span<const u8> buffer);
+};

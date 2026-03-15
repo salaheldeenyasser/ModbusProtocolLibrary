@@ -1,218 +1,229 @@
 #include "ModbusFrameCodec.h"
 
-std::vector<u8> ModbusFrameCodec::encodeRtuRequest(const ModbusFrame &frame)
-{
-    std::vector<u8> buffer;
-    // Slave ID + Function Code + Data + CRC
-    buffer.reserve(2 + frame.data.size() + 2);
-    buffer.push_back(frame.slaveID);
-    buffer.push_back(frame.functionCode);
-    buffer.insert(buffer.end(), frame.data.begin(), frame.data.end());
-    // Calculate CRC
-    u16 crc = CrcEngine::calculate(buffer.data(), buffer.size());
-    buffer.push_back(crc & 0xFF);        // CRC Low byte
-    buffer.push_back((crc >> 8) & 0xFF); // CRC High byte
-    return buffer;
+// ─── Encode ──────────────────────────────────────────────────────────────────
+
+std::vector<u8> ModbusFrameCodec::encodeRtuRequest(const ModbusFrame& frame) {
+    std::vector<u8> buf;
+    buf.reserve(2 + frame.data.size() + 2);
+    buf.push_back(frame.slaveID);
+    buf.push_back(frame.functionCode);
+    buf.insert(buf.end(), frame.data.begin(), frame.data.end());
+    u16 crc = CrcEngine::calculate(buf.data(), buf.size());
+    buf.push_back(static_cast<u8>(crc & 0xFF));        // CRC low byte  (little-endian)
+    buf.push_back(static_cast<u8>((crc >> 8) & 0xFF)); // CRC high byte
+    return buf;
 }
 
-std::expected<ModbusFrame, ModbusError> ModbusFrameCodec::decodeRtuResponse(std::span<const u8> buffer)
-{
-    // Minimum length check: Slave ID (1) + Function Code (1) + Data (1 + n) + CRC (2) = 5 + n bytes
-    if (buffer.size() < 5)
-    {
+// ─── Decode ──────────────────────────────────────────────────────────────────
+
+// BUG FIX: the original code checked frame.isExceptionResponse() BEFORE
+// assigning frame.functionCode, so functionCode was always 0 and the check
+// never fired.  We now assign functionCode FIRST.
+std::expected<ModbusFrame, ModbusError>
+ModbusFrameCodec::decodeRtuResponse(std::span<const u8> buffer) {
+    if (buffer.size() < 5) {
         return std::unexpected(ModbusError(ProtocolErrorCode::InvalidFrameLength));
     }
-    if (buffer.size() >= 5)
-    {
-        // Verify CRC
-        // 1. calculate CRC of first 7 bytes
-        u16 receivedCrc = buffer[buffer.size() - 2] | (buffer[buffer.size() - 1] << 8);
-        u16 calculatedCrc = CrcEngine::calculate(buffer.data(), buffer.size() - 2);
-        // 2. compare with bytes[7..8]
-        if (calculatedCrc != receivedCrc)
-        {
-            return std::unexpected(ModbusError(ProtocolErrorCode::CrcMismatch));
-        }
-        // 3. Extract frame fields
-        ModbusFrame frame;
-        frame.slaveID = buffer[0];
-        u8 rawFunctionCode = buffer[1];
-        // 4. Check for exception response
-        if (frame.isExceptionResponse())
-        {
-            // Exception response: data contains exception code
-            ModbusException ex;
-            ex.functionCode = rawFunctionCode & 0x7F; // Original FC
-            ex.exceptionCode = buffer[2];             // The error code (0x01, 0x02, etc.)
-            return std::unexpected(ex);
-        }
-        // 5. Normal response: data contains the payload
-        frame.functionCode = rawFunctionCode;
-        frame.data.assign(buffer.begin() + 2, buffer.end() - 2);
-        frame.crc = receivedCrc;
 
-        return frame;
+    // Reconstruct the received CRC from the last two bytes (little-endian)
+    u16 receivedCrc =
+        static_cast<u16>(buffer[buffer.size() - 2]) |
+        (static_cast<u16>(buffer[buffer.size() - 1]) << 8);
+
+    u16 calculatedCrc = CrcEngine::calculate(buffer.data(), buffer.size() - 2);
+    if (calculatedCrc != receivedCrc) {
+        return std::unexpected(ModbusError(ProtocolErrorCode::CrcMismatch));
     }
-    else
-    {
-        return std::unexpected(ModbusError(ProtocolErrorCode::UnexpectedResponse));
-    }
+
+    ModbusFrame frame;
+    frame.slaveID      = buffer[0];
+    frame.functionCode = buffer[1];   // assign BEFORE checking isExceptionResponse
+    frame.crc          = receivedCrc;
+    // Payload = everything between FC byte and the 2 CRC bytes
+    frame.data.assign(buffer.begin() + 2, buffer.end() - 2);
+
+    // NOTE: We return the frame as-is even for exception responses.
+    // The caller is responsible for checking frame.isExceptionResponse().
+    // This keeps decoding orthogonal to protocol semantics.
+    return frame;
 }
 
-// FC 0x01: Read Coils
+// ─── Request factories ────────────────────────────────────────────────────────
+
+static void pushU16(std::vector<u8>& v, u16 val) {
+    v.push_back(static_cast<u8>((val >> 8) & 0xFF)); // high byte
+    v.push_back(static_cast<u8>( val       & 0xFF)); // low  byte
+}
+
 ModbusFrame ModbusFrameCodec::makeReadCoilsRequest(
     u8 slaveId, u16 startAddr, u16 count)
 {
-    ModbusFrame frame;
-    frame.slaveID = slaveId;
-    frame.functionCode = static_cast<u8>(FunctionCode::ReadCoils); // Read Coils
-    frame.data.push_back((startAddr >> 8) & 0xFF);                 // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);                        // Start Address Low byte
-    frame.data.push_back((count >> 8) & 0xFF);                     // Quantity High byte
-    frame.data.push_back(count & 0xFF);                            // Quantity Low byte
-    return frame;
+    ModbusFrame f;
+    f.slaveID      = slaveId;
+    f.functionCode = static_cast<u8>(FunctionCode::ReadCoils);
+    pushU16(f.data, startAddr);
+    pushU16(f.data, count);
+    return f;
 }
 
-// FC 0x02: Read Discrete Inputs
 ModbusFrame ModbusFrameCodec::makeReadDiscreteInputsRequest(
     u8 slaveId, u16 startAddr, u16 count)
 {
-    ModbusFrame frame;
-    frame.slaveID = slaveId;
-    frame.functionCode = static_cast<u8>(FunctionCode::ReadDiscreteInputs); // Read Discrete Inputs
-    frame.data.push_back((startAddr >> 8) & 0xFF);                          // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);                                 // Start Address Low byte
-    frame.data.push_back((count >> 8) & 0xFF);                              // Quantity High byte
-    frame.data.push_back(count & 0xFF);                                     // Quantity Low byte
-    return frame;
+    ModbusFrame f;
+    f.slaveID      = slaveId;
+    f.functionCode = static_cast<u8>(FunctionCode::ReadDiscreteInputs);
+    pushU16(f.data, startAddr);
+    pushU16(f.data, count);
+    return f;
 }
 
-// FC 0x03: Read Holding Registers
 ModbusFrame ModbusFrameCodec::makeReadHoldingRegistersRequest(
     u8 slaveId, u16 startAddr, u16 count)
 {
-    ModbusFrame frame;
-    frame.slaveID = slaveId;
-    frame.functionCode = static_cast<u8>(FunctionCode::ReadHoldingRegisters); // Read Holding Registers
-    frame.data.push_back((startAddr >> 8) & 0xFF);                            // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);                                   // Start Address Low byte
-    frame.data.push_back((count >> 8) & 0xFF);                                // Quantity High byte
-    frame.data.push_back(count & 0xFF);                                       // Quantity Low byte
-    return frame;
+    ModbusFrame f;
+    f.slaveID      = slaveId;
+    f.functionCode = static_cast<u8>(FunctionCode::ReadHoldingRegisters);
+    pushU16(f.data, startAddr);
+    pushU16(f.data, count);
+    return f;
 }
 
-// FC 0x04: Read Input Registers
 ModbusFrame ModbusFrameCodec::makeReadInputRegistersRequest(
     u8 slaveId, u16 startAddr, u16 count)
 {
-    ModbusFrame frame;
-    frame.slaveID = slaveId;
-    frame.functionCode = static_cast<u8>(FunctionCode::ReadInputRegisters); // Read Input Registers
-    frame.data.push_back((startAddr >> 8) & 0xFF);                          // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);                                 // Start Address Low byte
-    frame.data.push_back((count >> 8) & 0xFF);                              // Quantity High byte
-    frame.data.push_back(count & 0xFF);                                     // Quantity Low byte
-    return frame;
+    ModbusFrame f;
+    f.slaveID      = slaveId;
+    f.functionCode = static_cast<u8>(FunctionCode::ReadInputRegisters);
+    pushU16(f.data, startAddr);
+    pushU16(f.data, count);
+    return f;
 }
 
-// FC 0x05: Write Single Coil
 ModbusFrame ModbusFrameCodec::makeWriteSingleCoilRequest(
     u8 slaveId, u16 coilAddr, bool value)
 {
-    ModbusFrame frame;
-    frame.slaveID = slaveId;
-    frame.functionCode = static_cast<u8>(FunctionCode::WriteSingleCoil); // Write Single Coil
-    frame.data.push_back((coilAddr >> 8) & 0xFF);                        // Coil Address High byte
-    frame.data.push_back(coilAddr & 0xFF);                               // Coil Address Low byte
-    u16 coilValue = value ? 0xFF00 : 0x0000;                             // ON = 0xFF00, OFF = 0x0000
-    frame.data.push_back((coilValue >> 8) & 0xFF);                       // Coil Value High byte
-    frame.data.push_back(coilValue & 0xFF);                              // Coil Value Low byte
-    return frame;
+    ModbusFrame f;
+    f.slaveID      = slaveId;
+    f.functionCode = static_cast<u8>(FunctionCode::WriteSingleCoil);
+    pushU16(f.data, coilAddr);
+    // Modbus spec: 0xFF00 = ON, 0x0000 = OFF — any other value is illegal
+    pushU16(f.data, value ? static_cast<u16>(0xFF00) : static_cast<u16>(0x0000));
+    return f;
 }
 
-// FC 0x06: Write Single Register
 ModbusFrame ModbusFrameCodec::makeWriteSingleRegisterRequest(
     u8 slaveId, u16 registerAddr, u16 value)
 {
-    ModbusFrame frame;
-    frame.slaveID = slaveId;
-    frame.functionCode = static_cast<u8>(FunctionCode::WriteSingleRegister); // Write   Single Register
-    frame.data.push_back((registerAddr >> 8) & 0xFF);                        // Register Address High byte
-    frame.data.push_back(registerAddr & 0xFF);                               // Register Address Low byte
-    frame.data.push_back((value >> 8) & 0xFF);                               // Register Value High byte
-    frame.data.push_back(value & 0xFF);                                      // Register Value Low byte
-    return frame;
+    ModbusFrame f;
+    f.slaveID      = slaveId;
+    f.functionCode = static_cast<u8>(FunctionCode::WriteSingleRegister);
+    pushU16(f.data, registerAddr);
+    pushU16(f.data, value);
+    return f;
 }
 
-// FC 0x0F: Write Multiple Coils
+// BUG FIX: original was missing byteCount + actual coil bit-packing
 ModbusFrame ModbusFrameCodec::makeWriteMultipleCoilsRequest(
-    u8 slaveId, u16 startAddr, const std::vector<bool> &values)
+    u8 slaveId, u16 startAddr, const std::vector<bool>& values)
 {
-    ModbusFrame frame;
-    frame.slaveID = slaveId;
-    frame.functionCode = static_cast<u8>(FunctionCode::WriteMultipleCoils); // Write Multiple Coils
-    frame.data.push_back((startAddr >> 8) & 0xFF);                          // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);                                 // Start Address Low byte
-    u16 count = values.size();
-    frame.data.push_back((count >> 8) & 0xFF); // Quantity High byte
-    frame.data.push_back(count & 0xFF);        // Quantity Low byte
-    return frame;
-}
-
-// FC 0x10: Write Multiple Registers
-ModbusFrame ModbusFrameCodec::makeWriteMultipleRegistersRequest(
-    u8 slaveId, u16 startAddr, const std::vector<u16> &values)
-{
-    ModbusFrame frame;
-    frame.slaveID = slaveId;
-    frame.functionCode = static_cast<u8>(FunctionCode::WriteMultipleRegisters); // Write Multiple Registers
-    frame.data.push_back((startAddr >> 8) & 0xFF);                              // Start Address High byte
-    frame.data.push_back(startAddr & 0xFF);                                     // Start Address Low byte
-    u16 count = values.size();
-    frame.data.push_back((count >> 8) & 0xFF); // Quantity High byte
-    frame.data.push_back(count & 0xFF);        // Quantity Low byte
-    return frame;
-}
-
-// FC 0x08: Diagnostics
-ModbusFrame ModbusFrameCodec::makeDiagnosticRequest(
-    u8 slaveId, u16 subFunction, const std::vector<u16> &data)
-{
-    ModbusFrame frame;
-    frame.slaveID = slaveId;
-    frame.functionCode = static_cast<u8>(FunctionCode::Diagnostic); // Diagnostics
-    frame.data.push_back((subFunction >> 8) & 0xFF);                // Sub-function Code High byte
-    frame.data.push_back(subFunction & 0xFF);                       // Sub-function Code Low byte
-    for (u16 value : data)
-    {
-        frame.data.push_back((value >> 8) & 0xFF); // Data High byte
-        frame.data.push_back(value & 0xFF);        // Data Low byte
+    ModbusFrame f;
+    f.slaveID      = slaveId;
+    f.functionCode = static_cast<u8>(FunctionCode::WriteMultipleCoils);
+    u16 count      = static_cast<u16>(values.size());
+    pushU16(f.data, startAddr);
+    pushU16(f.data, count);
+    // Byte count = ceil(count / 8)
+    u8 byteCount = static_cast<u8>((count + 7) / 8);
+    f.data.push_back(byteCount);
+    // Pack coils into bytes, LSB first
+    for (u8 i = 0; i < byteCount; ++i) {
+        u8 byte = 0;
+        for (int bit = 0; bit < 8; ++bit) {
+            sz idx = static_cast<sz>(i * 8 + bit);
+            if (idx < values.size() && values[idx]) {
+                byte |= static_cast<u8>(1u << bit);
+            }
+        }
+        f.data.push_back(byte);
     }
-    return frame;
+    return f;
 }
 
-// FC 0x17: Read/Write Multiple Registers
-ModbusFrame ModbusFrameCodec::makeReadWriteMultipleRegistersRequest(
-    u8 slaveId, u16 readStartAddr, u16 readCount, u16 writeStartAddr, const std::vector<u16> &writeValues)
+// BUG FIX: original was missing byteCount + actual register data bytes
+ModbusFrame ModbusFrameCodec::makeWriteMultipleRegistersRequest(
+    u8 slaveId, u16 startAddr, const std::vector<u16>& values)
 {
+    ModbusFrame f;
+    f.slaveID      = slaveId;
+    f.functionCode = static_cast<u8>(FunctionCode::WriteMultipleRegisters);
+    u16 count      = static_cast<u16>(values.size());
+    pushU16(f.data, startAddr);
+    pushU16(f.data, count);
+    u8 byteCount = static_cast<u8>(count * 2);
+    f.data.push_back(byteCount);
+    for (u16 val : values) {
+        pushU16(f.data, val);
+    }
+    return f;
+}
+
+// ── Modbus TCP codec ──────────────────────────────────────────────────────────
+
+// MBAP header layout:
+//   bytes[0..1]  Transaction Identifier (big-endian)
+//   bytes[2..3]  Protocol Identifier    = 0x0000 for Modbus
+//   bytes[4..5]  Length                 = bytes following this field
+//   bytes[6]     Unit Identifier        = Slave ID
+// Then immediately: FC byte, then data bytes.
+
+std::vector<u8>
+ModbusTcpCodec::encodeTcpRequest(const ModbusFrame& frame, u16 transactionId) {
+    // length = UnitID(1) + FC(1) + data(N)
+    u16 length = static_cast<u16>(2u + frame.data.size());
+
+    std::vector<u8> buf;
+    buf.reserve(6u + 1u + 1u + frame.data.size());
+
+    // MBAP header
+    buf.push_back(static_cast<u8>((transactionId >> 8) & 0xFF)); // TransID hi
+    buf.push_back(static_cast<u8>( transactionId       & 0xFF)); // TransID lo
+    buf.push_back(0x00);                                          // Protocol hi
+    buf.push_back(0x00);                                          // Protocol lo
+    buf.push_back(static_cast<u8>((length >> 8) & 0xFF));        // Length hi
+    buf.push_back(static_cast<u8>( length       & 0xFF));        // Length lo
+
+    // PDU
+    buf.push_back(frame.slaveID);
+    buf.push_back(frame.functionCode);
+    buf.insert(buf.end(), frame.data.begin(), frame.data.end());
+
+    return buf;
+}
+
+std::expected<ModbusFrame, ModbusError>
+ModbusTcpCodec::decodeTcpResponse(std::span<const u8> buffer) {
+    // Minimum: 6 bytes MBAP + 1 UnitID + 1 FC = 8 bytes
+    if (buffer.size() < 8)
+        return std::unexpected(ModbusError(ProtocolErrorCode::InvalidFrameLength));
+
+    // Validate Protocol ID
+    if (buffer[2] != 0x00 || buffer[3] != 0x00)
+        return std::unexpected(ModbusError(ProtocolErrorCode::UnexpectedResponse));
+
+    u16 declaredLength = static_cast<u16>(
+        (static_cast<u16>(buffer[4]) << 8) | buffer[5]);
+
+    // buffer must be exactly 6 (MBAP) + declaredLength bytes
+    if (buffer.size() < static_cast<sz>(6u + declaredLength))
+        return std::unexpected(ModbusError(ProtocolErrorCode::InvalidFrameLength));
+
     ModbusFrame frame;
-    frame.slaveID = slaveId;
-    frame.functionCode = static_cast<u8>(FunctionCode::ReadWriteMultipleRegisters); // Read/Write Multiple Registers
-    // Read parameters
-    frame.data.push_back((readStartAddr >> 8) & 0xFF); // Read Start Address High byte
-    frame.data.push_back(readStartAddr & 0xFF);        // Read Start Address Low byte
-    frame.data.push_back((readCount >> 8) & 0xFF);     // Read Quantity High byte
-    frame.data.push_back(readCount & 0xFF);            // Read Quantity Low byte
-    // Write parameters
-    frame.data.push_back((writeStartAddr >> 8) & 0xFF); // Write Start Address High byte
-    frame.data.push_back(writeStartAddr & 0xFF);        // Write Start Address Low byte
-    u16 writeCount = writeValues.size();
-    frame.data.push_back((writeCount >> 8) & 0xFF); // Write Quantity High byte
-    frame.data.push_back(writeCount & 0xFF);        // Write Quantity Low byte
-    for (u16 value : writeValues)
-    {
-        frame.data.push_back((value >> 8) & 0xFF); // Write Value High byte
-        frame.data.push_back(value & 0xFF);        // Write Value Low byte
+    frame.slaveID      = buffer[6];
+    frame.functionCode = buffer[7];
+    // Payload starts at byte 8, length = declaredLength - 2 (UnitID + FC)
+    if (declaredLength > 2) {
+        frame.data.assign(buffer.begin() + 8,
+                          buffer.begin() + 6 + declaredLength);
     }
     return frame;
 }
